@@ -7,13 +7,13 @@ class Generator():
                  device,
                  latent_size,
                  hidden_size,
-                 image_size,
+                 maze_size,
                  num_epochs,
                  batch_size):
         self.device = device
         self.latent_size = latent_size
         self.hidden_size = hidden_size
-        self.image_size = image_size
+        self.maze_size = maze_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.model = nn.Sequential(
@@ -21,17 +21,17 @@ class Generator():
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, image_size),
+            nn.Linear(hidden_size, maze_size),
             nn.Tanh())
         #set device
         self.model = self.model.to(device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
 
     def train(self, D, loss_criterion, real_labels):
-        # Compute loss with fake images
+        # Compute loss with fake mazes
         z = torch.randn(self.batch_size, self.latent_size).to(self.device)
-        fake_images = self.model(z)
-        outputs = D(fake_images)
+        fake_mazes = self.model(z)
+        outputs = D(fake_mazes)
 
         #maximize log(D(G(z))
         return loss_criterion(outputs, real_labels)
