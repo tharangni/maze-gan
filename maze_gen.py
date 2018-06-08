@@ -51,13 +51,22 @@ def generate_maze(mx, my):
 
 
 def demo_generate_maze(mx, my): # width and height of the maze
+    for _ in range(50):
+        maze = generate_maze(mx, my)
 
-    maze = generate_maze(mx, my)
-
-    from matplotlib import pyplot as plt
-    plt.imshow(maze, cmap='gray')
+        # check maze
+        from scipy.ndimage.measurements import label
+        labeled_array, num_features = label(maze)
+        if num_features > 1:
+            print(num_features)
+            print(labeled_array)
+            from matplotlib import pyplot as plt
+            #plt.figure()
+            #plt.imshow(maze, cmap='gray', interpolation='nearest')
+            plt.figure()
+            plt.imshow(labeled_array, cmap='gray', interpolation='nearest')
     plt.show()
 
 
 if __name__ == '__main__':
-    demo_generate_maze(16, 16)
+    demo_generate_maze(4, 4)
