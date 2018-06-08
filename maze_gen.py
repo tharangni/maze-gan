@@ -49,24 +49,38 @@ def generate_maze(mx, my):
 
     return maze
 
+def check_maze(maze, mx, my):
+    # single connected-component
+    from scipy.ndimage.measurements import label
+    labeled_array, num_features = label(maze)
+    if num_features > 1:
+        return False
+    # no loops 
+    maze = 1 - maze
+    s = [[1,1,1],
+         [1,1,1],
+         [1,1,1]]
+    labeled_array, num_features = label(maze, structure=s)
+    for feat in range(1, num_features+1):
+        indexes = np.array(np.where(labeled_array==feat))
+        
+        if np.all(indexes[:, :] != 0) and np.all(indexes[0, :] != mx-1) and np.all(indexes[1, :] != my-1):
+            return False
+    return True
 
 def demo_generate_maze(mx, my): # width and height of the maze
-    for _ in range(50):
-        maze = generate_maze(mx, my)
-
-        # check maze
-        from scipy.ndimage.measurements import label
-        labeled_array, num_features = label(maze)
-        if num_features > 1:
-            print(num_features)
-            print(labeled_array)
-            from matplotlib import pyplot as plt
-            #plt.figure()
-            #plt.imshow(maze, cmap='gray', interpolation='nearest')
-            plt.figure()
-            plt.imshow(labeled_array, cmap='gray', interpolation='nearest')
+    maze = generate_maze(mx, my)
+    print(check_maze(maze, mx, my))
+    from matplotlib import pyplot as plt
+    plt.figure()
+    plt.imshow(maze, cmap='gray')
+        
     plt.show()
 
 
 if __name__ == '__main__':
-    demo_generate_maze(4, 4)
+    demo_generate_maze(16, 16)
+    
+
+    
+    
