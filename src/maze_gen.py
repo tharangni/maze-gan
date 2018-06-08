@@ -5,8 +5,28 @@
 # FB - 20121214
 # Modified by Peter O'Conor
 import numpy as np
+import torch
+from matplotlib import pyplot as plt
+from scipy.ndimage.measurements import label
 imgx = 500; imgy = 500
 
+def check_maze(maze, mx, my):
+    # single connected-component
+    labeled_array, num_features = label(maze)
+    if num_features > 1:
+        return False
+    # no loops
+    maze = 1 - maze
+    s = [[1,1,1],
+         [1,1,1],
+         [1,1,1]]
+    labeled_array, num_features = label(maze, structure=s)
+    for feat in range(1, num_features+1):
+        indexes = np.array(np.where(labeled_array==feat))
+
+        if np.all(indexes[:, :] != 0) and np.all(indexes[0, :] != mx-1) and np.all(indexes[1, :] != my-1):
+            return False
+    return True
 
 def generate_maze(mx, my):
     """
@@ -47,40 +67,31 @@ def generate_maze(mx, my):
         else:
             stack.pop()
 
-    return maze
+    if check_maze(maze, mx, my):
+        correct_maze = np.array(maze, dtype = np.int32)
+    else: correct_maze = np.array(maze, dtype = np.int32)
 
-def check_maze(maze, mx, my):
-    # single connected-component
-    from scipy.ndimage.measurements import label
-    labeled_array, num_features = label(maze)
-    if num_features > 1:
-        return False
-    # no loops 
-    maze = 1 - maze
-    s = [[1,1,1],
-         [1,1,1],
-         [1,1,1]]
-    labeled_array, num_features = label(maze, structure=s)
-    for feat in range(1, num_features+1):
-        indexes = np.array(np.where(labeled_array==feat))
-        
-        if np.all(indexes[:, :] != 0) and np.all(indexes[0, :] != mx-1) and np.all(indexes[1, :] != my-1):
-            return False
-    return True
+    return correct_maze
 
 def demo_generate_maze(mx, my): # width and height of the maze
     maze = generate_maze(mx, my)
-    print(check_maze(maze, mx, my))
-    from matplotlib import pyplot as plt
-    plt.figure()
-    plt.imshow(maze, cmap='gray')
-        
-    plt.show()
+    if check_maze(maze, mx, my):
+        plt.figure()
+        plt.imshow(maze, cmap='gray')
 
+        plt.show()
 
-if __name__ == '__main__':
-    demo_generate_maze(16, 16)
-    
+def maze_data(mx, my, N):
+    data = []
+    for i in range(N):
+        maze = generate_maze(mx, my)
+        if i%100 == 0:
+            print("Generated {}/{} mazes...".format(i, N))
+        data.append(maze)
 
-    
-    
+    return np.array(data)
+
+ # you can add to the list all the transformations you need.
+
+# if __name__ == '__main__':
+#     demo_generate_maze(16, 16)
