@@ -6,6 +6,7 @@ lib
 pip-selfcheck.json
 pyvenv.cfg
 lib64
+temp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
