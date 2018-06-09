@@ -1,9 +1,8 @@
 import os
+import pickle
 import torch
-import torchvision
 import torch.nn as nn
 from torchvision import transforms
-from torchvision.utils import save_image
 from generator import Generator
 from discriminator import Discriminator
 from maze_gen import maze_data
@@ -34,6 +33,7 @@ class GAN:
         self.my = my
         self.N = N
         self.maze_dir = maze_dir
+        self.model_dir = "models"
 
 
     def denorm(self, x):
@@ -51,8 +51,6 @@ class GAN:
         maze = self.transform(maze_data(self.N, self.mx, self.my))
 
         # Data loader
-        print("-------------")
-        print("batch size ", self.batch_size)
         data_loader = torch.utils.data.DataLoader(dataset=maze,
                                                   batch_size=self.batch_size,
                                                   shuffle=True)
@@ -63,27 +61,11 @@ class GAN:
 
         #Start training
         for epoch in range(self.num_epochs):
-            print("enumerate ", enumerate(data_loader))
             for i , maze_set in enumerate(data_loader):
-                #check here why it doesn't use batch
-                print("maze_set ", len(maze_set))
-                #for maze in maze_set:
                 maze_set= maze_set.reshape(self.batch_size, -1).to(self.device).float()
-                #print("i ", i)P
-                #print("mazes ", maze)
-                print("------")
-                #maze = maze.view(maze.numel()).to(torch.float)
 
-                print("Maze size ", maze_set.size())
-
-                # Create the labels which are later used as input for the BCE loss
                 real_labels = torch.ones([self.batch_size,1], dtype = torch.float).to(self.device)
                 fake_labels = torch.zeros([self.batch_size,1], dtype = torch.float).to(self.device)
-                print("Real_labels ", real_labels.size())
-                print("Fake_labels ", fake_labels.size())
-
-                print("Type of maze_set ", maze_set.dtype)
-                print("Type of real labels ", real_labels.dtype)
 
                 #Train Discrimator
                 d_loss_fake, d_loss_real, fake_score, real_score, fake_mazes = self.D.train(self.G.model, maze_set, loss_criterion, real_labels, fake_labels)
@@ -100,13 +82,22 @@ class GAN:
 
             # Save real mazes
             if (epoch + 1) == 1:
-                #reconstruct mazes here
-                maze_set = maze_set.reshape((self.mx, self.my))
-                # mazes = mazes.reshape(mazes.size(0), 1, 28, 28)
-                save_image(self.denorm(maze_set), os.path.join(self.maze_dir, 'real_mazes.txt'))
+                maze_set = maze_set.reshape(maze_set.size(0), self.mx, self.my)
+                print("maze set szie", maze_set.size())
+                #could use pickle instead?
+                dump_file(os.path.join(self.maze_dir, 'real_mazes.pickle'), maze_set)
 
             # Save sampled mazes
-            fake_mazes = fake_mazes.reshape(fake_mazes.size(0), 1, 28, 28)
-            save_image(self.denorm(fake_mazes), os.path.join(self.maze_dir, 'fake_mazes-{}.png'.format(epoch + 1)))
-        torch.save(self.G.state_dict(), 'G.ckpt')
-        torch.save(self.D.state_dict(), 'D.ckpt')
+            fake_mazes = fake_mazes.reshape(fake_mazes.size(0), self.mx, self.my)
+            dump_file(os.path.join(self.maze_dir, 'fake_mazes-{}.pickle'.format(epoch + 1)), fake_mazes)
+
+        if not os.path.exists(self.model_dir):
+            os.makedirs(self.model_dir)
+        torch.save(self.G.model.state_dict(), self.model_dir + '/G.ckpt')
+        torch.save(self.D.model.state_dict(), self.model_dir + '/D.ckpt')
+
+
+def dump_file(loc, data):
+    output = open(loc, 'wb')
+    pickle.dump(data, output)
+    output.close()
