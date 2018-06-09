@@ -5,19 +5,19 @@ class Generator():
 
     def __init__(self,
                  device,
-                 latent_size,
+                 input_size,
                  hidden_size,
                  maze_size,
                  num_epochs,
                  batch_size):
         self.device = device
-        self.latent_size = latent_size
+        self.input_size = input_size
         self.hidden_size = hidden_size
         self.maze_size = maze_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.model = nn.Sequential(
-            nn.Linear(latent_size, hidden_size),
+            nn.Linear(input_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
@@ -29,7 +29,7 @@ class Generator():
 
     def train(self, D, loss_criterion, real_labels):
         # Compute loss with fake mazes
-        z = torch.randn(self.batch_size, self.latent_size).to(self.device)
+        z = torch.randn(self.batch_size, self.input_size).to(self.device)
         fake_mazes = self.model(z)
         outputs = D(fake_mazes)
 
