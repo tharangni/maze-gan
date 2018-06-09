@@ -51,6 +51,8 @@ class GAN:
         maze = self.transform(maze_data(self.N, self.mx, self.my))
 
         # Data loader
+        print("-------------")
+        print("batch size ", self.batch_size)
         data_loader = torch.utils.data.DataLoader(dataset=maze,
                                                   batch_size=self.batch_size,
                                                   shuffle=True)
@@ -63,26 +65,33 @@ class GAN:
         for epoch in range(self.num_epochs):
             print("enumerate ", enumerate(data_loader))
             for i , maze_set in enumerate(data_loader):
-                for maze in maze_set:
-                    # mazes = mazes.reshape(self.batch_size, -1).to(self.device)
-                    print("i ", i)
-                    print("mazes ", maze)
-                    print("------")
-                    maze = maze.view(maze.numel()).to(torch.float)
-                    print(maze.size())
+                #check here why it doesn't use batch
+                print("maze_set ", len(maze_set))
+                #for maze in maze_set:
+                maze_set= maze_set.reshape(self.batch_size, -1).to(self.device).float()
+                #print("i ", i)P
+                #print("mazes ", maze)
+                print("------")
+                #maze = maze.view(maze.numel()).to(torch.float)
 
-                    # Create the labels which are later used as input for the BCE loss
-                    real_labels = torch.ones([self.maze_size,1], dtype = torch.float).to(self.device)
-                    fake_labels = torch.zeros([self.maze_size,1], dtype = torch.float).to(self.device)
-                    print("Real_labels ", )
+                print("Maze size ", maze_set.size())
 
-                    #Train Discrimator
-                    d_loss_fake, d_loss_real, fake_score, real_score, fake_mazes = self.D.train(self.G.model, maze, loss_criterion, real_labels, fake_labels)
-                    d_loss = self.D.backprop( d_loss_fake, d_loss_real, self.reset_grad)
+                # Create the labels which are later used as input for the BCE loss
+                real_labels = torch.ones([self.batch_size,1], dtype = torch.float).to(self.device)
+                fake_labels = torch.zeros([self.batch_size,1], dtype = torch.float).to(self.device)
+                print("Real_labels ", real_labels.size())
+                print("Fake_labels ", fake_labels.size())
 
-                    #Train Generator
-                    g_loss = self.G.train(self.D.model, loss_criterion, real_labels)
-                    self.G.backprop(g_loss, self.reset_grad)
+                print("Type of maze_set ", maze_set.dtype)
+                print("Type of real labels ", real_labels.dtype)
+
+                #Train Discrimator
+                d_loss_fake, d_loss_real, fake_score, real_score, fake_mazes = self.D.train(self.G.model, maze_set, loss_criterion, real_labels, fake_labels)
+                d_loss = self.D.backprop( d_loss_fake, d_loss_real, self.reset_grad)
+
+                #Train Generator
+                g_loss = self.G.train(self.D.model, loss_criterion, real_labels)
+                self.G.backprop(g_loss, self.reset_grad)
 
                 if (i + 1) % 200 == 0:
                     print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'
@@ -91,9 +100,10 @@ class GAN:
 
             # Save real mazes
             if (epoch + 1) == 1:
-                mazes = mazes.reshape((self.mx, self.my))
+                #reconstruct mazes here
+                maze_set = maze_set.reshape((self.mx, self.my))
                 # mazes = mazes.reshape(mazes.size(0), 1, 28, 28)
-                save_image(self.denorm(mazes), os.path.join(self.maze_dir, 'real_mazes.png'))
+                save_image(self.denorm(maze_set), os.path.join(self.maze_dir, 'real_mazes.txt'))
 
             # Save sampled mazes
             fake_mazes = fake_mazes.reshape(fake_mazes.size(0), 1, 28, 28)
