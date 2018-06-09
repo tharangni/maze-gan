@@ -7,6 +7,9 @@ pip-selfcheck.json
 pyvenv.cfg
 lib64
 temp
+.idea/
+models/
+maze_results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

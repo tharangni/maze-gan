@@ -76,10 +76,12 @@ def generate_maze(mx, my):
 def demo_generate_maze(mx, my): # width and height of the maze
     maze = generate_maze(mx, my)
     if check_maze(maze, mx, my):
-        plt.figure()
-        plt.imshow(maze, cmap='gray')
+        draw_maze(maze)
 
-        plt.show()
+def draw_maze(maze):
+    plt.figure()
+    plt.imshow(maze, cmap='gray')
+    plt.show()
 
 def maze_data(mx, my, N):
     data = []
@@ -88,7 +90,6 @@ def maze_data(mx, my, N):
         if i%100 == 0:
             print("Generated {}/{} mazes...".format(i, N))
         data.append(maze)
-
     return np.array(data)
 
  # you can add to the list all the transformations you need.
