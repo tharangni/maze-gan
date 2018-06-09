@@ -47,8 +47,7 @@ def start():
     #TODO check batch size is appropoate for the N given
 
     args = parser.parse_args()
-    print(args)
-
+    
     if args.v:
         visualise_results(args.v[0], args.v[1])
     elif args.t:

@@ -58,7 +58,7 @@ class GAN:
 
         #Start training
         for epoch in range(self.num_epochs):
-            for i , maze_set in enumerate(data_loader):
+            for local_batch , maze_set in enumerate(data_loader):
                 maze_set= maze_set.reshape(self.batch_size, -1).to(self.device).float()
 
                 real_labels = torch.ones([self.batch_size,1], dtype = torch.float).to(self.device)
@@ -77,9 +77,9 @@ class GAN:
                 g_loss = self.G.train(self.D.model, loss_criterion, real_labels)
                 self.G.backprop(g_loss, self.reset_grad)
 
-                if (i + 1) % 200 == 0:
+                if (local_batch + 1) % 100 == 0 or (epoch + 1) % 500 == 0:
                     print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'
-                          .format(epoch, self.num_epochs, i + 1, total_step, d_loss.item(), g_loss.item(),
+                          .format(epoch, self.num_epochs, local_batch + 1, total_step, d_loss.item(), g_loss.item(),
                                   real_score.mean().item(), fake_score.mean().item()))
 
             # Save real mazes
