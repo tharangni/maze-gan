@@ -15,10 +15,10 @@ def start():
     #-------------------------------------------------------#
     parser.add_argument("--N", help="No. of traning examples to generate", type=int, default=200)
     parser.add_argument("--input_size", help="No. inputs for generator", type=int, default=4)
-    parser.add_argument("--hidden_size", help="No. of hidden layers", type=int, default=8)
-    parser.add_argument("--num_epochs", help="No. of traning examples to generate", type=int, default=200)
-    parser.add_argument("--batch_size", help="No. of traning examples to generate", type=int, default=100)
-    parser.add_argument("--maze_dir", help="No. of traning examples to generate", type=str, default="maze_results")
+    parser.add_argument("--hidden_size", help="No. of hidden neurons", type=int, default=8)
+    parser.add_argument("--num_epochs", help="No. of epochs", type=int, default=200)
+    parser.add_argument("--batch_size", help="Size of batch to use (Must be compatible with N)", type=int, default=100)
+    parser.add_argument("--maze_dir", help="Directory results are stored in", type=str, default="maze_results")
 
     #TODO check batch size is appropoate for the N given
 
