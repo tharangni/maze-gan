@@ -5,7 +5,7 @@ import torch.nn as nn
 from torchvision import transforms
 from generator import Generator
 from discriminator import Discriminator
-from maze_gen import maze_data
+from maze_gen import gen_maze_data
 
 # Device configuration
 class GAN:
@@ -32,7 +32,6 @@ class GAN:
         self.maze_dir = maze_dir
         self.model_dir = "models"
 
-
     def denorm(self, x):
         out = (x + 1) / 2
         return out.clamp(0, 1)
@@ -43,12 +42,13 @@ class GAN:
 
     def train(self):
 
-        self.transform = transforms.Compose([transforms.ToTensor()])
+        #self.transform = transforms.Compose([transforms.ToTensor()])
         #generate maze data
-        maze = self.transform(maze_data(self.N, self.mx, self.my))
+        #maze_data = self.transform(gen_maze_data(self.N, self.mx, self.my))
+        maze_data = gen_maze_data(self.N, self.mx, self.my)
 
         # Data loader
-        data_loader = torch.utils.data.DataLoader(dataset=maze,
+        data_loader = torch.utils.data.DataLoader(dataset=maze_data,
                                                   batch_size=self.batch_size,
                                                   shuffle=True)
 

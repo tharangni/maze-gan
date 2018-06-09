@@ -83,7 +83,7 @@ def draw_maze(maze):
     plt.imshow(maze, cmap='gray')
     plt.show()
 
-def maze_data(mx, my, N):
+def gen_maze_data(N, mx, my):
     data = []
     for i in range(N):
         maze = generate_maze(mx, my)

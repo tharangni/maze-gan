@@ -1,36 +1,58 @@
 import argparse
 import os
 import torch
+import pickle
+from maze_gen import check_maze
 from gan import GAN
+
+def_dir='maze_results'
+
+
+def visualise_results(dir, eg_no):
+    path = os.path.join(dir, 'fake_mazes-{}.pickle'.format(eg_no))
+    print('Visualising sample from {}'.format(path))
+    #visualise sample from final results
+    mazes = pickle.load(open(path, 'rb'))
+    print(mazes)
+    #takes sample and plot
+
+def test_results(dir, eg_no):
+    path =  os.path.join(dir, 'fake_mazes-{}.pickle'.format(eg_no))
+    print('Testing results from {}'.format(path) )
+    mazes = pickle.load(open(path, 'rb'))
+    print(mazes)
+    #r = np.array()
+    #for each m in maze
+    #   r.append(check_maze(maze))
+    #print(r.sum(), " out of ", len(r))
 
 
 def start():
     #look for cmd arguments here
+
     parser = argparse.ArgumentParser(description='Run GAN or visualise maze.')
-    parser.add_argument("--v", "--visualise", help="Visualise a sample of fake results", action="store_true", default=None)
-    parser.add_argument("--t", "--test", help="Test fake results", action="store_true", default=None)
+    parser.add_argument('--v', '--visualise', action='store',nargs=2, help='Visualise a sample of fake results')
+    parser.add_argument('--t', '--test', action='store', nargs=2, help='Test fake results')
     #------ Have to check which are rows and columns -------#
-    parser.add_argument("--mx", help="No. columns in maze", type=int, default=4)
-    parser.add_argument("--my", help="No. rows in maze", type=int, default=4)
+    parser.add_argument('--mx', help='No. columns in maze', type=int, default=4)
+    parser.add_argument('--my', help='No. rows in maze', type=int, default=4)
     #-------------------------------------------------------#
-    parser.add_argument("--N", help="No. of traning examples to generate", type=int, default=200)
-    parser.add_argument("--input_size", help="No. inputs for generator", type=int, default=4)
-    parser.add_argument("--hidden_size", help="No. of hidden neurons", type=int, default=8)
-    parser.add_argument("--num_epochs", help="No. of epochs", type=int, default=200)
-    parser.add_argument("--batch_size", help="Size of batch to use (Must be compatible with N)", type=int, default=100)
-    parser.add_argument("--maze_dir", help="Directory results are stored in", type=str, default="maze_results")
+    parser.add_argument('--N', help='No. of traning examples to generate', type=int, default=200)
+    parser.add_argument('--input_size', help='No. inputs for generator', type=int, default=4)
+    parser.add_argument('--hidden_size', help='No. of hidden neurons', type=int, default=8)
+    parser.add_argument('--num_epochs', help='No. of epochs', type=int, default=200)
+    parser.add_argument('--batch_size', help='Size of batch to use (Must be compatible with N)', type=int, default=100)
+    parser.add_argument('--maze_dir', help='Directory results are stored in', type=str, default=def_dir)
 
     #TODO check batch size is appropoate for the N given
 
-
-    #parser.parse_args('t') #test fake results
     args = parser.parse_args()
     print(args)
-    if args.v:
-        print("Visualising sample")
-    elif args.t:
-        print("Testing fake results")
 
+    if args.v:
+        visualise_results(args.v[0], args.v[1])
+    elif args.t:
+        test_results(args.t[0], args.t[1])
     else:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -53,7 +75,3 @@ def start():
     #save gan
 if __name__ == '__main__':
     start()
-
-
-def test_results():
-    print(test_results)
