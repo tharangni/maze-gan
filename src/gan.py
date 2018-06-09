@@ -12,9 +12,8 @@ class GAN:
 
     def __init__(self,
                  device,
-                 latent_size,
+                 input_size,
                  hidden_size,
-                 maze_size,
                  num_epochs,
                  batch_size,
                  mx,
@@ -22,11 +21,9 @@ class GAN:
                  N,
                  maze_dir):
         self.device = device
-        self.G = Generator(self.device, latent_size, hidden_size, maze_size, num_epochs, batch_size)
-        self.D = Discriminator(self.device, latent_size, hidden_size, maze_size, num_epochs, batch_size)
-        self.latent_size = latent_size
+        self.G = Generator(self.device, input_size, hidden_size, mx * my, num_epochs, batch_size)
+        self.D = Discriminator(self.device, hidden_size, mx * my, num_epochs, batch_size)
         self.hidden_size = hidden_size
-        self.maze_size = maze_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.mx = mx
@@ -68,7 +65,12 @@ class GAN:
                 fake_labels = torch.zeros([self.batch_size,1], dtype = torch.float).to(self.device)
 
                 #Train Discrimator
-                d_loss_fake, d_loss_real, fake_score, real_score, fake_mazes = self.D.train(self.G.model, maze_set, loss_criterion, real_labels, fake_labels)
+                d_loss_fake, d_loss_real, fake_score, real_score, fake_mazes = self.D.train(self.G.model,
+                                                                                            self.G.input_size,
+                                                                                            maze_set,
+                                                                                            loss_criterion,
+                                                                                            real_labels,
+                                                                                            fake_labels)
                 d_loss = self.D.backprop( d_loss_fake, d_loss_real, self.reset_grad)
 
                 #Train Generator
@@ -83,8 +85,6 @@ class GAN:
             # Save real mazes
             if (epoch + 1) == 1:
                 maze_set = maze_set.reshape(maze_set.size(0), self.mx, self.my)
-                print("maze set szie", maze_set.size())
-                #could use pickle instead?
                 dump_file(os.path.join(self.maze_dir, 'real_mazes.pickle'), maze_set)
 
             # Save sampled mazes

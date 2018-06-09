@@ -4,15 +4,12 @@ import torch.nn as nn
 class Discriminator:
     def __init__(self,
                  device,
-                 latent_size,
                  hidden_size,
                  maze_size,
                  num_epochs,
                  batch_size):
         self.device = device
-        self.latent_size = latent_size
         self.hidden_size = hidden_size
-        self.maze_size = maze_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.model = nn.Sequential(
@@ -27,6 +24,7 @@ class Discriminator:
 
     def train(self,
               G,
+              input_size,
               mazes,
               loss_criterion,
               real_labels,
@@ -39,7 +37,7 @@ class Discriminator:
         real_score = outputs
 
         #Fake BCE_Loss
-        z = torch.randn(self.batch_size, self.latent_size).to(self.device)
+        z = torch.randn(self.batch_size, input_size).to(self.device)
         fake_mazes = G(z)
         outputs = self.model(fake_mazes)
         fake_score = outputs
