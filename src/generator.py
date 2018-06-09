@@ -24,7 +24,7 @@ class Generator():
             nn.Linear(hidden_size, maze_size),
             nn.Tanh())
         #set device
-        self.model = self.model.to(device)
+        self.model = self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
 
     def train(self, D, loss_criterion, real_labels):
