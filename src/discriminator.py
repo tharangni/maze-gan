@@ -22,7 +22,7 @@ class Discriminator:
             nn.LeakyReLU(0.2),
             nn.Linear(hidden_size, 1),
             nn.Sigmoid())
-        self.model = self.model
+        self.model = self.model # this pointless
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
 
     def train(self,
@@ -35,6 +35,9 @@ class Discriminator:
         #Loss starts (x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
         #Real BCE_Loss
         outputs = self.model(mazes)
+        print("done")
+        print(real_labels.size())
+        print(outputs.size())
         d_loss_real = loss_criterion(outputs, real_labels)
         real_score = outputs
 

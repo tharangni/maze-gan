@@ -88,7 +88,7 @@ def maze_data(mx, my, N):
         if i%100 == 0:
             print("Generated {}/{} mazes...".format(i, N))
         data.append(maze)
-
+    print(len(data))
     return np.array(data)
 
  # you can add to the list all the transformations you need.
