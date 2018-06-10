@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
+
 
 class Discriminator:
     def __init__(self,
@@ -39,6 +41,8 @@ class Discriminator:
         #Fake BCE_Loss
         z = torch.randn(self.batch_size, input_size).to(self.device)
         fake_mazes = G(z)
+        m = RelaxedBernoulli(torch.tensor([0.75]), probs=fake_mazes)
+        fake_mazes = m.sample()
         outputs = self.model(fake_mazes)
         fake_score = outputs
         d_loss_fake = loss_criterion(outputs, fake_labels)

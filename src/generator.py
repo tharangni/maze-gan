@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
 
 class Generator():
 
@@ -22,7 +23,8 @@ class Generator():
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, maze_size),
-            nn.Tanh())
+            #nn.Tanh())
+            nn.Sigmoid())
         #set device
         self.model = self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
@@ -31,6 +33,9 @@ class Generator():
         # Compute loss with fake mazes
         z = torch.randn(self.batch_size, self.input_size).to(self.device)
         fake_mazes = self.model(z)
+        # gumbel-softmax?
+        m = RelaxedBernoulli(torch.tensor([0.75]), probs=fake_mazes)
+        fake_mazes = m.sample()
         outputs = D(fake_mazes)
 
         #maximize log(D(G(z))

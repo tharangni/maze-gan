@@ -10,9 +10,11 @@ from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import label
 imgx = 500; imgy = 500
 
-def check_maze(maze, mx, my):
+def check_maze(maze):
     # single connected-component
     labeled_array, num_features = label(maze)
+    npmaze = np.array(maze)
+    mx, my = npmaze.shape
     if num_features > 1:
         return False
     # no loops
@@ -67,7 +69,7 @@ def generate_maze(mx, my):
         else:
             stack.pop()
 
-    if check_maze(maze, mx, my):
+    if check_maze(maze):
         correct_maze = np.array(maze, dtype = np.int32)
     else: correct_maze = np.array(maze, dtype = np.int32)
 
