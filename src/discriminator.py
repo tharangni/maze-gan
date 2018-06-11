@@ -30,25 +30,34 @@ class Discriminator:
               mazes,
               loss_criterion,
               real_labels,
-              fake_labels):
+              fake_labels,
+              reset_grad):
 
         #Loss starts (x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
-        #Real BCE_Loss
+
+        reset_grad()
+        #Real Data BCE_Loss
         outputs = self.model(mazes)
         d_loss_real = loss_criterion(outputs, real_labels)
+        d_loss_real.backward()
         real_score = outputs
 
-        #Fake BCE_Loss
+        ##Fake Data BCE_Loss
+        # Generate fake data first
         z = torch.randn(self.batch_size, input_size).to(self.device)
         fake_mazes = G(z)
         test_tensor = torch.tensor([0.75]).to(self.device)
         m = RelaxedBernoulli(test_tensor, probs=fake_mazes)
         fake_mazes = m.sample()
         outputs = self.model(fake_mazes)
+        #Fake data loss
         fake_score = outputs
         d_loss_fake = loss_criterion(outputs, fake_labels)
+        d_loss_fake.backward()
 
-        return d_loss_fake, d_loss_real, fake_score, real_score, fake_mazes
+        self.optimizer.step()
+
+        return d_loss_fake + d_loss_real, fake_score, real_score, fake_mazes
 
 
     def backprop(self, d_loss_fake, d_loss_real, reset_grad):
