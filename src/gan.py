@@ -65,17 +65,18 @@ class GAN:
                 fake_labels = torch.zeros([self.batch_size,1], dtype = torch.float).to(self.device)
 
                 #Train Discrimator
-                d_loss_fake, d_loss_real, fake_score, real_score, fake_mazes = self.D.train(self.G.model,
-                                                                                            self.G.input_size,
-                                                                                            maze_set,
-                                                                                            loss_criterion,
-                                                                                            real_labels,
-                                                                                            fake_labels)
-                d_loss = self.D.backprop( d_loss_fake, d_loss_real, self.reset_grad)
+                d_loss, fake_score, real_score, fake_mazes = self.D.train(self.G.model,
+                                                                            self.G.input_size,
+                                                                            maze_set,
+                                                                            loss_criterion,
+                                                                            real_labels,
+                                                                            fake_labels,
+                                                                            self.reset_grad)
+                # d_loss = self.D.backprop( d_loss_fake, d_loss_real, self.reset_grad)
 
                 #Train Generator
-                g_loss = self.G.train(self.D.model, loss_criterion, real_labels)
-                self.G.backprop(g_loss, self.reset_grad)
+                g_loss = self.G.train(self.D.model, loss_criterion, real_labels, self.reset_grad)
+                # self.G.backprop(g_loss, self.reset_grad)
 
                 if (local_batch + 1) % 100 == 0 or (epoch + 1) % 100 == 0:
                     print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'

@@ -29,7 +29,8 @@ class Generator():
         self.model = self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
 
-    def train(self, D, loss_criterion, real_labels):
+    def train(self, D, loss_criterion, real_labels, reset_grad):
+        reset_grad()
         # Compute loss with fake mazes
         z = torch.randn(self.batch_size, self.input_size).to(self.device)
         fake_mazes = self.model(z)
@@ -39,8 +40,13 @@ class Generator():
         fake_mazes = m.sample()
         outputs = D(fake_mazes)
 
+        g_loss = loss_criterion(outputs, real_labels)
+
+        g_loss.backward()
+
+        self.optimizer.step()
         #maximize log(D(G(z))
-        return loss_criterion(outputs, real_labels)
+        return g_loss
 
     def backprop(self, g_loss, reset_grad):
         reset_grad()
