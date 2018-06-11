@@ -41,7 +41,8 @@ class Discriminator:
         #Fake BCE_Loss
         z = torch.randn(self.batch_size, input_size).to(self.device)
         fake_mazes = G(z)
-        m = RelaxedBernoulli(torch.tensor([0.75]), probs=fake_mazes)
+        test_tensor = torch.tensor([0.75]).to(self.device)
+        m = RelaxedBernoulli(test_tensor, probs=fake_mazes)
         fake_mazes = m.sample()
         outputs = self.model(fake_mazes)
         fake_score = outputs
