@@ -10,7 +10,6 @@ from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import label
 imgx = 500; imgy = 500
 
-#TODO: Not sure if this is checking mazes correctly
 def check_maze(maze):
     # single connected-component
     labeled_array, num_features = label(maze)

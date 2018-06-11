@@ -34,7 +34,8 @@ class Generator():
         z = torch.randn(self.batch_size, self.input_size).to(self.device)
         fake_mazes = self.model(z)
         # gumbel-softmax?
-        m = RelaxedBernoulli(torch.tensor([0.75]), probs=fake_mazes)
+        test_tensor = torch.tensor([0.75]).to(self.device)
+        m = RelaxedBernoulli(test_tensor, probs=fake_mazes)
         fake_mazes = m.sample()
         outputs = D(fake_mazes)
 
