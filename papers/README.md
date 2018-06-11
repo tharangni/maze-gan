@@ -12,4 +12,9 @@ Some websites with info on Gumbel-softmax:
 boundary-seeking and maliGAN are proposed alternatives to gumbel-softmax
 * https://www.microsoft.com/en-us/research/blog/boundary-seeking-gans-new-method-adversarial-generation-discrete-data/
 
-https://medium.com/ai-society/gans-from-scratch-1-a-deep-introduction-with-code-in-pytorch-and-tensorflow-cb03cdcdba0f
+## GAN links
+* https://medium.com/ai-society/gans-from-scratch-1-a-deep-introduction-with-code-in-pytorch-and-tensorflow-cb03cdcdba0f
+* https://medium.com/@utk.is.here/keep-calm-and-train-a-gan-pitfalls-and-tips-on-training-generative-adversarial-networks-edd529764aa9
+* https://jhui.github.io/2017/03/05/Generative-adversarial-models/
+* https://towardsdatascience.com/understanding-and-optimizing-gans-going-back-to-first-principles-e5df8835ae18
+* https://wiseodd.github.io/techblog/2017/02/04/wasserstein-gan/
