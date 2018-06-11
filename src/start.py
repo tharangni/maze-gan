@@ -2,7 +2,7 @@ import argparse
 import os
 import torch
 import pickle
-from maze_gen import check_maze
+from maze_gen import check_maze, draw_maze
 from gan import GAN
 from matplotlib import pyplot as plt
 
@@ -20,10 +20,14 @@ def visualise_results(dir, eg_no):
         maze[maze<0.5] = 0
         maze[maze>0.5] = 1
         # is it a valid maze?
-        print(check_maze(maze))
-        plt.figure()
-        plt.imshow(maze.detach().numpy(), cmap='gray')
-        plt.show()
+        if torch.cuda.is_available(): maze = maze.cpu()
+        maze = maze.detach().numpy()
+        check = check_maze(maze)
+        if check:
+            print(check)
+            draw_maze(maze)
+        else:
+            print(check)
 
 def test_results(dir, eg_no):
     path =  os.path.join(dir, 'fake_mazes-{}.pickle'.format(eg_no))
@@ -56,7 +60,7 @@ def start():
     #TODO check batch size is appropoate for the N given
 
     args = parser.parse_args()
-    
+
     if args.v:
         visualise_results(args.v[0], args.v[1])
     elif args.t:

@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import label
 imgx = 500; imgy = 500
 
+#TODO: Not sure if this is checking mazes correctly
 def check_maze(maze):
     # single connected-component
     labeled_array, num_features = label(maze)
@@ -28,7 +29,8 @@ def check_maze(maze):
 
         if np.all(indexes[:, :] != 0) and np.all(indexes[0, :] != mx-1) and np.all(indexes[1, :] != my-1):
             return False
-    return True
+        else: return True
+
 
 def generate_maze(mx, my):
     """
