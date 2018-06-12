@@ -19,6 +19,7 @@ def visualise_results(dir, eg_no):
     #print(mazes)
     #takes sample and plot
     for maze in mazes[:10]:
+        print(maze)
         maze[maze<0.5] = 0
         maze[maze>0.5] = 1
         # is it a valid maze?
@@ -31,6 +32,17 @@ def visualise_results(dir, eg_no):
         else:
             print(check)
             draw_maze(maze)
+    correct = 0
+    for maze in mazes:
+        maze[maze<0.5] = 0
+        maze[maze>0.5] = 1
+        if torch.cuda.is_available(): maze = maze.cpu()
+        maze = maze.detach().numpy()
+        check = check_maze(maze)
+        if check:
+            correct += 1
+            draw_maze(maze)
+    print(correct, ' correct out of ', len(mazes))
 
 
 def test_results(dir, eg_no):

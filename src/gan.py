@@ -65,9 +65,9 @@ class GAN:
                 # Real: 0.0 - 0.1
                 # Fake: 0.9 - 1.0
                 # adding 10% noise to training (i.e. add 10% fake labels to real and vice versa)
-                real_labels = 0 + torch.randn([self.batch_size,1], dtype = torch.float).to(self.device)*(0.1 - 0.0)
-                fake_labels = 0.9 + torch.randn([self.batch_size,1], dtype = torch.float).to(self.device)*(1.0 - 0.9)
-
+                real_labels = 0 + torch.rand([self.batch_size,1], dtype = torch.float).to(self.device)*(0.1 - 0.0)
+                fake_labels = 0.9 + torch.rand([self.batch_size,1], dtype = torch.float).to(self.device)*(1.0 - 0.9)
+                
                 noise_samples = 20
 
                 if(epoch % noise_samples==0):
