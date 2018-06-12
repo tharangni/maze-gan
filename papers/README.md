@@ -18,3 +18,6 @@ boundary-seeking and maliGAN are proposed alternatives to gumbel-softmax
 * https://jhui.github.io/2017/03/05/Generative-adversarial-models/
 * https://towardsdatascience.com/understanding-and-optimizing-gans-going-back-to-first-principles-e5df8835ae18
 * https://wiseodd.github.io/techblog/2017/02/04/wasserstein-gan/
+
+## Continuous Relaxation
+* https://uva-slpl.github.io/ull/resources/slides/dgm-relaxations.pdf - Notes from our lecture in unsupervised lang. learning course which explains continuous relaxation of discrete variables
