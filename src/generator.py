@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import torch.nn as nn
 from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
 
@@ -23,7 +24,7 @@ class Generator():
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, maze_size),
-            #nn.Tanh())
+            # nn.Tanh())
             nn.Sigmoid())
         #set device
         self.model = self.model.to(self.device)
@@ -31,14 +32,21 @@ class Generator():
 
     def train(self, D, loss_criterion, real_labels, reset_grad):
         reset_grad()
-        # Compute loss with fake mazes
+
+        ## Compute loss with fake mazes
+        # forward pass with the discrete variable 
+        # z_discrete = np.random.choice([0, 1], size=(self.batch_size, self.input_size), p=[4./10, 6./10])
+        # z_tensor = torch.from_numpy(z_discrete).to(self.device)
+        # z_tensor = z_tensor.float()
         z = torch.randn(self.batch_size, self.input_size).to(self.device)
         fake_mazes = self.model(z)
+
         # gumbel-softmax?
         test_tensor = torch.tensor([0.75]).to(self.device)
         m = RelaxedBernoulli(test_tensor, probs=fake_mazes)
         fake_mazes = m.sample()
         outputs = D(fake_mazes)
+
 
         g_loss = loss_criterion(outputs, real_labels)
 

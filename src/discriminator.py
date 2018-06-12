@@ -17,8 +17,10 @@ class Discriminator:
         self.model = nn.Sequential(
             nn.Linear(maze_size, hidden_size),
             nn.LeakyReLU(0.2),
+            nn.Dropout(0.3),
             nn.Linear(hidden_size, hidden_size),
             nn.LeakyReLU(0.2),
+            nn.Dropout(0.3),
             nn.Linear(hidden_size, 1),
             nn.Sigmoid())
         self.model = self.model.to(self.device)

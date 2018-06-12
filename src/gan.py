@@ -61,8 +61,19 @@ class GAN:
             for local_batch , maze_set in enumerate(data_loader):
                 maze_set= maze_set.reshape(self.batch_size, -1).to(self.device).float()
 
-                real_labels = torch.ones([self.batch_size,1], dtype = torch.float).to(self.device)
-                fake_labels = torch.zeros([self.batch_size,1], dtype = torch.float).to(self.device)
+                # l + torch.randn(1, 10)*(r-l) - USING SOFT LABELS INSTEAD OF HARD
+                # Real: 0.0 - 0.1
+                # Fake: 0.9 - 1.0
+                # adding 10% noise to training (i.e. add 10% fake labels to real and vice versa)
+                real_labels = 0 + torch.randn([self.batch_size,1], dtype = torch.float).to(self.device)*(0.1 - 0.0)
+                fake_labels = 0.9 + torch.randn([self.batch_size,1], dtype = torch.float).to(self.device)*(1.0 - 0.9)
+
+                noise_samples = 20
+
+                if(epoch % noise_samples==0):
+                    real_labels = 0.9 + torch.randn([self.batch_size,1], dtype = torch.float).to(self.device)*(1.0 - 0.9)
+                    fake_labels = 0 + torch.randn([self.batch_size,1], dtype = torch.float).to(self.device)*(0.1 - 0.0)
+
 
                 #Train Discrimator
                 d_loss, fake_score, real_score, fake_mazes = self.D.train(self.G.model,
