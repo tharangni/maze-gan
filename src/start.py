@@ -4,12 +4,14 @@ import torch
 import pickle
 from maze_gen import check_maze, draw_maze
 from gan import GAN
+import numpy as np
 from matplotlib import pyplot as plt
 
 def_dir='maze_results'
 
 
 def visualise_results(dir, eg_no):
+    # path = os.path.join(dir, 'real_mazes.pickle')
     path = os.path.join(dir, 'fake_mazes-{}.pickle'.format(eg_no))
     print('Visualising sample from {}'.format(path))
     #visualise sample from final results
@@ -35,11 +37,11 @@ def test_results(dir, eg_no):
     path =  os.path.join(dir, 'fake_mazes-{}.pickle'.format(eg_no))
     print('Testing results from {}'.format(path) )
     mazes = pickle.load(open(path, 'rb'))
-    print(mazes)
-    #r = np.array()
-    #for each m in maze
-    #   r.append(check_maze(maze))
-    #print(r.sum(), " out of ", len(r))
+    # print(mazes)
+    r = []
+    for each_maze in mazes:
+      r.append(check_maze(each_maze))
+    print(len(r))
 
 
 def start():
@@ -68,7 +70,7 @@ def start():
     elif args.t:
         test_results(args.t[0], args.t[1])
     else:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device('cpu' if torch.cuda.is_available() else 'cpu')
 
         if not os.path.exists(args.maze_dir):
             os.makedirs(args.maze_dir)
