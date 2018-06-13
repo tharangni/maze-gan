@@ -26,23 +26,9 @@ def visualise_results(dir, eg_no):
         if torch.cuda.is_available(): maze = maze.cpu()
         maze = maze.detach().numpy()
         check = check_maze(maze)
-        if check:
-            print(check)
-            draw_maze(maze)
-        else:
-            print(check)
-            draw_maze(maze)
-    correct = 0
-    for maze in mazes:
-        maze[maze<0.5] = 0
-        maze[maze>0.5] = 1
-        if torch.cuda.is_available(): maze = maze.cpu()
-        maze = maze.detach().numpy()
-        check = check_maze(maze)
-        if check:
-            correct += 1
-            draw_maze(maze)
-    print(correct, ' correct out of ', len(mazes))
+        print(check)
+        draw_maze(maze)
+    test_results(dir, eg_no)
 
 
 def test_results(dir, eg_no):
@@ -50,10 +36,14 @@ def test_results(dir, eg_no):
     print('Testing results from {}'.format(path) )
     mazes = pickle.load(open(path, 'rb'))
     # print(mazes)
-    r = []
-    for each_maze in mazes:
-      r.append(check_maze(each_maze))
-    print(len(r))
+    r = np.array([])
+    for maze in mazes:
+        maze[maze < 0.5] = 0
+        maze[maze > 0.5] = 1
+        if torch.cuda.is_available(): maze = maze.cpu()
+        maze = maze.detach().numpy()
+        r = np.append(r, check_maze(maze))
+    print(r.sum(), " out of ", len(r), "  ", r.sum()/len(r) * 100, "%")
 
 
 def start():
