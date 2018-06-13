@@ -1,6 +1,7 @@
 import os
 import pickle
 import torch
+import csv
 import torch.nn as nn
 from torchvision import transforms
 from generator import Generator
@@ -57,6 +58,9 @@ class GAN:
         total_step = len(data_loader)
 
         #Start training
+        epochs_file = csv.writer(open(self.model_dir + "/epoch.csv", 'w', newline=''), delimiter=',')
+        epochs_file.writerow(['epoch_no', 'batch_no', 'd_loss', 'g_loss', 'D(x)', 'D(G(X))'])
+
         for epoch in range(self.num_epochs):
             for local_batch , maze_set in enumerate(data_loader):
                 maze_set= maze_set.reshape(self.batch_size, -1).to(self.device).float()
@@ -67,7 +71,7 @@ class GAN:
                 # adding 10% noise to training (i.e. add 10% fake labels to real and vice versa)
                 real_labels = 0 + torch.rand([self.batch_size,1], dtype = torch.float).to(self.device)*(0.1 - 0.0)
                 fake_labels = 0.9 + torch.rand([self.batch_size,1], dtype = torch.float).to(self.device)*(1.0 - 0.9)
-                
+
                 noise_samples = 20
 
                 if(epoch % noise_samples==0):
@@ -89,9 +93,12 @@ class GAN:
                 g_loss = self.G.train(self.D.model, loss_criterion, real_labels, self.reset_grad)
                 # self.G.backprop(g_loss, self.reset_grad)
 
+                #Write to results for plotting
+                epochs_file.writerow([epoch + 1, local_batch + 1, d_loss.item(), g_loss.item(), real_score.mean().item(), fake_score.mean().item()])
+
                 if (local_batch + 1) % 100 == 0 or (epoch + 1) % 100 == 0:
                     print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'
-                          .format(epoch, self.num_epochs, local_batch + 1, total_step, d_loss.item(), g_loss.item(),
+                          .format(epoch + 1, self.num_epochs, local_batch + 1, total_step, d_loss.item(), g_loss.item(),
                                   real_score.mean().item(), fake_score.mean().item()))
 
             # Save real mazes
@@ -107,7 +114,6 @@ class GAN:
             os.makedirs(self.model_dir)
         torch.save(self.G.model.state_dict(), self.model_dir + '/G.ckpt')
         torch.save(self.D.model.state_dict(), self.model_dir + '/D.ckpt')
-
 
 def dump_file(loc, data):
     output = open(loc, 'wb')
