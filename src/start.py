@@ -4,6 +4,7 @@ import pickle
 import codecs
 import argparse
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 
 from maze_gen import check_maze, draw_maze
@@ -49,17 +50,12 @@ def test_results(dir, eg_no):
     print(r.sum(), " out of ", len(r), "  ", r.sum()/len(r) * 100, "%")
 
 
-def all_results(dir):
-    '''
-    Function for an overall summary of results for the entire run
-    NOTE: Make the model first before executing this
-    '''
+def get_results(dir, print_flag=True):
     length = len(os.listdir(dir)) - 1
     all_counts = []
-    print("Starting to read all files in directory: {}".format(dir))
     for i in range(length):
-        path = os.path.join(dir, 'fake_mazes-{}.pickle'.format(i+1))
-        with codecs.open(path, 'rb') as mazes :
+        path = os.path.join(dir, 'fake_mazes-{}.pickle'.format(i + 1))
+        with codecs.open(path, 'rb') as mazes:
             mazes = pickle.load(mazes)
             r = np.array([])
             for maze in mazes:
@@ -69,15 +65,49 @@ def all_results(dir):
                 maze = maze.detach().numpy()
                 r = np.append(r, check_maze(maze))
             all_counts.append(r.sum())
+
             # For analysis per pickle file
             # print('Testing results from fake maze-{} : {} out of {}: {:.2f} %'.format(i+1, r.sum(), len(r), r.sum()/len(r) * 100))
-        if i%100 == 0:
+        if i % 100 == 0 and print_flag:
             print("Completed {}/{}...".format(i, length))
+    return all_counts , r
+
+
+def all_results(dir):
+    '''
+    Function for an overall summary of results for the entire run
+    NOTE: Make the model first before executing this
+    '''
+    print("Starting to read all files in directory: {}".format(dir))
+
+    length = len(os.listdir(dir)) - 1
+    all_counts, r = get_results(dir)
     max_count = max(all_counts)
+    print(len(all_counts))
     for i in range(len(all_counts)):
-        if all_counts[i]==max_count:
+        if all_counts[i] == max_count:
             print('Most number of correct fake mazes found at file {} with {}/{}.'.format(i+1, max_count, len(r)))
 
+def visualise_loss(m_dir, r_dir):
+    epoch_file = pd.read_csv(os.path.join(m_dir, 'epoch.csv'))
+    fig = plt.figure(figsize=(20,10))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(epoch_file['epoch_no'], epoch_file['d_loss'], color='g', label="d_loss")
+    plt.plot(epoch_file['epoch_no'], epoch_file['g_loss'], color='orange', label="g_loss")
+    plt.plot(epoch_file['epoch_no'], epoch_file['D(x)'], color='r', label="D(X)")
+    plt.plot(epoch_file['epoch_no'], epoch_file['D(G(X))'], color='b', label="D(G(X))")
+    plt.xlabel('Epochs')
+    plt.ylabel('Score')
+    plt.title('GAN Loss')
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    maze_results,r = get_results(r_dir, print_flag=False)
+    plt.plot(np.unique(epoch_file['epoch_no']), maze_results, color='g', label="No. of correct mazes generated")
+    plt.title("Correct mazes")
+    plt.legend()
+    plt.show()
 
 def start():
     #look for cmd arguments here
@@ -86,6 +116,7 @@ def start():
     parser.add_argument('--v', '--visualise', action='store',nargs=2, help='Visualise a sample of fake results')
     parser.add_argument('--t', '--test', action='store', nargs=2, help='Test fake results for a sample')
     parser.add_argument('--a', '--all', action='store', nargs=1, help='Print results of the complete sample')
+    parser.add_argument('--vl', action='store', nargs=2, help='Visualise loss on GAN')
     #------ Have to check which are rows and columns -------#
     parser.add_argument('--mx', help='No. columns in maze', type=int, default=4)
     parser.add_argument('--my', help='No. rows in maze', type=int, default=4)
@@ -107,6 +138,8 @@ def start():
         test_results(args.t[0], args.t[1])
     elif args.a:
         all_results(args.a[0])
+    elif args.vl:
+        visualise_loss(args.vl[0],args.vl[1])
     else:
         device = torch.device('cpu' if torch.cuda.is_available() else 'cpu')
 
