@@ -58,7 +58,7 @@ class GAN:
         total_step = len(data_loader)
 
         #Start training
-        epochs_file = csv.writer(open(self.model_dir + "/epoch.csv", 'w', newline=''), delimiter=',')
+        epochs_file = csv.writer(open(os.path.join(self.model_dir, "epoch.csv"), 'w', newline=''), delimiter=',')
         epochs_file.writerow(['epoch_no', 'batch_no', 'd_loss', 'g_loss', 'D(x)', 'D(G(X))'])
 
         for epoch in range(self.num_epochs):
