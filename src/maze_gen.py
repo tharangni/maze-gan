@@ -81,7 +81,7 @@ def demo_generate_maze(mx, my): # width and height of the maze
     if check_maze(maze, mx, my):
         draw_maze(maze)
 
-def draw_maze(maze, close=True, time=1.5):
+def draw_maze(maze, close=True, time=1):
     plt.figure()
     plt.imshow(maze, cmap='gray')
     plt.show(block=False)

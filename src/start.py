@@ -29,7 +29,7 @@ def visualise_results(dir, eg_no):
         maze = maze.detach().numpy()
         check = check_maze(maze)
         print(check)
-        # draw_maze(maze)
+        draw_maze(maze)#need to see mazes, helps detemine patterns of mazes GAN draws
     test_results(dir, eg_no)
 
 
