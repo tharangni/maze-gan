@@ -8,10 +8,6 @@ pyvenv.cfg
 lib64
 *.ipynb
 temp
-.idea/
-models/
-maze_results/
-results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -120,3 +116,5 @@ ENV/
 
 # OSX
 **.DS_Store
+.idea/
+results/
