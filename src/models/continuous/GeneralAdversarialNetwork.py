@@ -60,7 +60,7 @@ class GeneralAdversarialNetwork:
                                   std=(0.5, 0.5, 0.5))])
         mnist = torchvision.datasets.MNIST(root='../../data/', train=True, transform=transform, download=True)
         data_loader = torch.utils.data.DataLoader(dataset=mnist, batch_size=self.batch_size,
-                                                  shuffle=False, num_workers=4)
+                                                  shuffle=False, num_workers=4, pin_memory=True)
 
         # -- Number of batches -- #
         num_batches = len(data_loader)
