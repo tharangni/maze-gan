@@ -1,7 +1,7 @@
 import torch
 from torch.autograd import Variable
 
-temperature = 5
+temperature = .000001
 
 def sample_gumbel(shape, eps=1e-20):
   U = torch.rand(shape)

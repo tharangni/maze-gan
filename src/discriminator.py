@@ -17,11 +17,11 @@ class Discriminator:
         self.batch_size = batch_size
         self.model = nn.Sequential(
             nn.Linear(maze_size, hidden_size),
-            nn.LeakyReLU(0.2),
-            nn.Dropout(0.2),
+            nn.LeakyReLU(0.5),
+            #nn.Dropout(0.2),
             nn.Linear(hidden_size, hidden_size),
-            nn.LeakyReLU(0.2),
-            nn.Dropout(0.2),
+            nn.LeakyReLU(0.5),
+            #nn.Dropout(0.2),
             nn.Linear(hidden_size, 1),
             nn.Sigmoid())
         self.model = self.model.to(self.device)
@@ -40,27 +40,16 @@ class Discriminator:
 
         reset_grad()
         #Real Data BCE_Loss
-        outputs = self.model(mazes)
+        outputs = self.model(gumbel_softmax(mazes) + torch.randn(mazes.size()))
         d_loss_real = loss_criterion(outputs, real_labels)
         d_loss_real.backward()
         real_score = outputs
 
         ##Fake Data BCE_Loss
-        import numpy as np
-        # Generate fake data first
         z = torch.randn(self.batch_size, input_size).to(self.device)
-        #y = gumbel_softmax(z)
-        #test_tensor = torch.tensor([0.75]).to(self.device)
-        #m = RelaxedBernoulli(test_tensor, probs=fake_mazes)
-        #fake_mazes = m.sample()
-        #y = gumbel_softmax(fake_mazes)
         fake_mazes = G(z)
-        temp_mazes = fake_mazes.clone()
-        temp_mazes[temp_mazes > 0.5] = 1
-        temp_mazes[temp_mazes < 0.5] = 0
-        fake_mazes = temp_mazes
-        y = gumbel_softmax(fake_mazes)
-        outputs = self.model(y)
+        outputs = self.model(gumbel_softmax(fake_mazes))
+
         #Fake data loss
         fake_score = outputs
         d_loss_fake = loss_criterion(outputs, fake_labels)
