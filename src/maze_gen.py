@@ -71,7 +71,7 @@ def generate_maze(mx, my):
             stack.pop()
 
     if check_maze(maze):
-        correct_maze = np.array(maze, dtype = np.int32)
+        correct_maze = np.array(maze, dtype =np.int32)
     else: correct_maze = np.array(maze, dtype = np.int32)
 
     return correct_maze

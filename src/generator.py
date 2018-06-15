@@ -3,6 +3,7 @@ import numpy as np
 import torch.nn as nn
 from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
 
+
 class Generator():
 
     def __init__(self,
@@ -11,7 +12,8 @@ class Generator():
                  hidden_size,
                  maze_size,
                  num_epochs,
-                 batch_size):
+                 batch_size,
+                 writer):
         self.device = device
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -26,9 +28,10 @@ class Generator():
             nn.Linear(hidden_size, maze_size),
             # nn.Tanh())
             nn.Sigmoid())
-        #set device
+        # set device
         self.model = self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
+        self.writer = writer
 
     def train(self, D, loss_criterion, real_labels, reset_grad):
         reset_grad()
@@ -47,13 +50,12 @@ class Generator():
         fake_mazes = m.sample()
         outputs = D(fake_mazes)
 
-
         g_loss = loss_criterion(outputs, real_labels)
 
         g_loss.backward()
 
         self.optimizer.step()
-        #maximize log(D(G(z))
+        # maximize log(D(G(z))
         return g_loss
 
     def backprop(self, g_loss, reset_grad):
