@@ -39,7 +39,7 @@ class GeneralAdversarialNetwork:
         self.G = Generator(self.generator_opts)
         self.D = Discriminator(self.discriminator_opts)
 
-        self.loss = nn.BCELoss()
+        self.loss = nn.BCELoss().to(device=self.device)
 
     def train(self):
         # --- Maze Data --- #
@@ -59,22 +59,22 @@ class GeneralAdversarialNetwork:
         num_batches = len(data_loader)
 
         # -- Generate labels -- #
-        real = torch.ones([self.batch_size, 1], dtype=torch.float).to(self.device)
-        fake = torch.zeros([self.batch_size, 1], dtype=torch.float).to(self.device)
+        real = torch.ones([self.batch_size, 1], dtype=torch.float).to(device=self.device)
+        fake = torch.zeros([self.batch_size, 1], dtype=torch.float).to(device=self.device)
 
         # --- Start training --- #
         for epoch in range(self.num_epochs):
             real_images = None
             fake_images = None
             for batch_idx, (real_images, _) in enumerate(data_loader):
-                real_images = real_images.reshape(self.batch_size, -1).to(self.device)
+                real_images = real_images.reshape(self.batch_size, -1).to(device=self.device)
 
                 # -- Reset gradients -- #
                 self.D.optimizer.zero_grad()
                 self.G.optimizer.zero_grad()
 
                 # -- Train Discriminator -- #
-                z = torch.randn(self.batch_size, self.latent_size).to(self.device)
+                z = torch.randn(self.batch_size, self.latent_size).to(device=self.device)
                 fake_images = self.G.forward(z)
                 d_forward_args = Bunch(
                     real_mazes=real_images,
@@ -91,7 +91,7 @@ class GeneralAdversarialNetwork:
                 d_loss = self.D.backward(d_backward_args)
 
                 # -- Train Generator -- #
-                z = torch.randn(self.batch_size, self.latent_size).to(self.device)
+                z = torch.randn(self.batch_size, self.latent_size).to(device=self.device)
                 fake_images = self.G.forward(z)
                 fake_scores = self.D.model(fake_images)
                 g_backward_args = Bunch(

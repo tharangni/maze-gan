@@ -26,7 +26,7 @@ class Generator(nn.Module):
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         if opts.resume:
             Checkpoint(None, 'MNIST', 'generator').load(self)
-        self.model = self.model.to(self.device)
+        self.model = self.model.to(device=self.device)
 
     def forward(self, z):
         return self.model(z)

@@ -24,7 +24,7 @@ class Discriminator(nn.Module):
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         if opts.resume:
             Checkpoint(None, 'MNIST', 'discriminator').load(self)
-        self.model = self.model.to(self.device)
+        self.model = self.model.to(device=self.device)
 
     def forward(self, args):
         real_scores = self.model(args.real_mazes)
