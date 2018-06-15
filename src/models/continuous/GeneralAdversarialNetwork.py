@@ -59,8 +59,9 @@ class GeneralAdversarialNetwork:
              transforms.Normalize(mean=(0.5, 0.5, 0.5),
                                   std=(0.5, 0.5, 0.5))])
         mnist = torchvision.datasets.MNIST(root='../../data/', train=True, transform=transform, download=True)
-        data_loader = torch.utils.data.DataLoader(dataset=mnist, batch_size=self.batch_size,
-                                                  shuffle=False, num_workers=4, pin_memory=True)
+        # data_loader = torch.utils.data.DataLoader(dataset=mnist, batch_size=self.batch_size,
+        #                                           shuffle=False, num_workers=4, pin_memory=True)
+        data_loader = mnist.train_data.reshape(-1, 100, 28, 28)
 
         # -- Number of batches -- #
         num_batches = len(data_loader)
@@ -73,8 +74,9 @@ class GeneralAdversarialNetwork:
         for epoch in range(self.num_epochs):
             real_images = None
             fake_images = None
-            for batch_idx, (real_images, _) in enumerate(data_loader):
-                real_images = real_images.reshape(self.batch_size, -1).to(device=self.device)
+            # for batch_idx, (real_images, _) in enumerate(data_loader):
+            for batch_idx, real_images in enumerate(data_loader):
+                real_images = real_images.reshape(self.batch_size, -1).to(device=self.device).type(DTYPE)
                 # -- Reset gradients -- #
                 self.D.optimizer.zero_grad()
                 self.G.optimizer.zero_grad()
