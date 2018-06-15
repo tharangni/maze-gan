@@ -4,7 +4,7 @@ import torch
 import pickle
 from helpers.MazeGenerator import check_maze, draw_maze
 
-from network.Continuous.GeneralAdversarialNetwork import GeneralAdversarialNetwork
+from models.continuous.GeneralAdversarialNetwork import GeneralAdversarialNetwork
 
 def_dir = 'maze_results'
 
@@ -71,11 +71,11 @@ def start():
     parser.add_argument('--num_epochs', help='No. of epochs', type=int,
                         default=200)
     parser.add_argument('--batch_size', help='Size of batch to use (Must be compatible with N)', type=int, default=100)
-    parser.add_argument('--maze_dir', help='Directory results are stored in', type=str, default=def_dir)
 
     parser.add_argument('--g_lr', help='Generator learning rate', type=float, default=0.0002)
     parser.add_argument('--d_lr', help='Discriminator learning rate', type=float, default=0.0002)
 
+    parser.add_argument('--model', help='Which model to train', type=str, default='mnist')
     parser.add_argument('--resume', help='Whether to resume or start fresh', type=bool, default=False)
 
     args = parser.parse_args()
@@ -85,13 +85,11 @@ def start():
     elif args.t:
         test_results(args.t[0], args.t[1])
     else:
-        if not os.path.exists(args.maze_dir):
-            os.makedirs(args.maze_dir)
-
-        gan = GeneralAdversarialNetwork(args)
-
-        # train
-        gan.train()
+        if args.model == 'mnist':
+            gan = GeneralAdversarialNetwork(args)
+            gan.train()
+        elif args.model == 'maze':
+            raise NotImplementedError
 
 
 if __name__ == '__main__':
