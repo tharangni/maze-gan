@@ -12,6 +12,12 @@ from models.continuous.Generator import Generator
 from models.continuous.Discriminator import Discriminator
 from helpers.Bunch import Bunch
 
+CUDA = torch.cuda.is_available()
+if CUDA:
+    DTYPE = torch.cuda.FloatTensor
+else:
+    DTYPE = torch.FloatTensor
+
 
 class GeneralAdversarialNetwork:
 
@@ -53,7 +59,8 @@ class GeneralAdversarialNetwork:
              transforms.Normalize(mean=(0.5, 0.5, 0.5),
                                   std=(0.5, 0.5, 0.5))])
         mnist = torchvision.datasets.MNIST(root='../../data/', train=True, transform=transform, download=True)
-        data_loader = torch.utils.data.DataLoader(dataset=mnist, batch_size=self.batch_size, shuffle=True)
+        data_loader = torch.utils.data.DataLoader(dataset=mnist, batch_size=self.batch_size,
+                                                  shuffle=False, num_workers=4)
 
         # -- Number of batches -- #
         num_batches = len(data_loader)
@@ -68,7 +75,6 @@ class GeneralAdversarialNetwork:
             fake_images = None
             for batch_idx, (real_images, _) in enumerate(data_loader):
                 real_images = real_images.reshape(self.batch_size, -1).to(device=self.device)
-
                 # -- Reset gradients -- #
                 self.D.optimizer.zero_grad()
                 self.G.optimizer.zero_grad()
@@ -119,7 +125,7 @@ class GeneralAdversarialNetwork:
 
             # -- Save models -- #
             generator_checkpoint = Bunch(
-                epoch=epoch+1, state_dict=self.G.model.state_dict(),
+                epoch=epoch + 1, state_dict=self.G.model.state_dict(),
                 optimizer=self.G.optimizer.state_dict()
             )
             Checkpoint(generator_checkpoint, 'MNIST', 'generator').save()
