@@ -61,14 +61,14 @@ class GeneralAdversarialNetwork:
         mnist = torchvision.datasets.MNIST(root='../../data/', train=True, transform=transform, download=True)
         # data_loader = torch.utils.data.DataLoader(dataset=mnist, batch_size=self.batch_size,
         #                                           shuffle=False, num_workers=4, pin_memory=True)
-        data_loader = mnist.train_data.reshape(-1, 100, 28, 28)
+        data_loader = mnist.train_data.reshape(-1, self.batch_size, 28, 28)
 
         # -- Number of batches -- #
         num_batches = len(data_loader)
 
         # -- Generate labels -- #
-        real = torch.ones([self.batch_size, 1], dtype=torch.float).to(device=self.device)
-        fake = torch.zeros([self.batch_size, 1], dtype=torch.float).to(device=self.device)
+        real = torch.ones([self.batch_size, 1], dtype=DTYPE).to(device=self.device)
+        fake = torch.zeros([self.batch_size, 1], dtype=DTYPE).to(device=self.device)
 
         # --- Start training --- #
         for epoch in range(self.num_epochs):
@@ -76,13 +76,13 @@ class GeneralAdversarialNetwork:
             fake_images = None
             # for batch_idx, (real_images, _) in enumerate(data_loader):
             for batch_idx, real_images in enumerate(data_loader):
-                real_images = real_images.reshape(self.batch_size, -1).to(device=self.device).type(DTYPE)
+                real_images = real_images.type(DTYPE).reshape(self.batch_size, -1)
                 # -- Reset gradients -- #
                 self.D.optimizer.zero_grad()
                 self.G.optimizer.zero_grad()
 
                 # -- Train Discriminator -- #
-                z = torch.randn(self.batch_size, self.latent_size).to(device=self.device)
+                z = torch.randn(self.batch_size, self.latent_size, dtype=DTYPE)
                 fake_images = self.G.forward(z)
                 d_forward_args = Bunch(
                     real_mazes=real_images,
@@ -99,7 +99,7 @@ class GeneralAdversarialNetwork:
                 d_loss = self.D.backward(d_backward_args)
 
                 # -- Train Generator -- #
-                z = torch.randn(self.batch_size, self.latent_size).to(device=self.device)
+                z = torch.randn(self.batch_size, self.latent_size, dtype=DTYPE)
                 fake_images = self.G.forward(z)
                 fake_scores = self.D.model(fake_images)
                 g_backward_args = Bunch(
