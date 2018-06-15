@@ -67,8 +67,8 @@ class GeneralAdversarialNetwork:
         num_batches = len(data_loader)
 
         # -- Generate labels -- #
-        real = torch.ones([self.batch_size, 1], dtype=DTYPE).to(device=self.device)
-        fake = torch.zeros([self.batch_size, 1], dtype=DTYPE).to(device=self.device)
+        real = torch.ones([self.batch_size, 1]).type(DTYPE)
+        fake = torch.zeros([self.batch_size, 1]).type(DTYPE)
 
         # --- Start training --- #
         for epoch in range(self.num_epochs):
@@ -82,7 +82,7 @@ class GeneralAdversarialNetwork:
                 self.G.optimizer.zero_grad()
 
                 # -- Train Discriminator -- #
-                z = torch.randn(self.batch_size, self.latent_size, dtype=DTYPE)
+                z = torch.randn(self.batch_size, self.latent_size).type(DTYPE)
                 fake_images = self.G.forward(z)
                 d_forward_args = Bunch(
                     real_mazes=real_images,
@@ -99,7 +99,7 @@ class GeneralAdversarialNetwork:
                 d_loss = self.D.backward(d_backward_args)
 
                 # -- Train Generator -- #
-                z = torch.randn(self.batch_size, self.latent_size, dtype=DTYPE)
+                z = torch.randn(self.batch_size, self.latent_size).type(DTYPE)
                 fake_images = self.G.forward(z)
                 fake_scores = self.D.model(fake_images)
                 g_backward_args = Bunch(
