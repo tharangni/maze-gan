@@ -6,6 +6,7 @@ import torch.random
 import torchvision
 from torchvision import transforms
 from torchvision.utils import save_image
+from matplotlib import pyplot as plt
 
 from helpers.Checkpoint import Checkpoint
 from models.continuous.Generator import Generator
@@ -42,19 +43,20 @@ class GeneralAdversarialNetwork:
         self.loss = nn.BCELoss().to(device=self.device)
 
     def train(self):
-        # --- Maze Data --- #
-        # print('Generating {} {}x{} maze examples.'.format(self.N, self.mx, self.my))
-        # maze_data = gen_maze_data(self.N, self.mx, self.my)
-        # data_loader = torch.utils.data.DataLoader(dataset=maze_data, batch_size=self.batch_size, shuffle=True)
 
         # --- MNIST Data --- #
         transform = transforms.Compose(
-            [transforms.ToTensor(),
-             transforms.Normalize(mean=(0.5, 0.5, 0.5),
+            [
+                transforms.ToTensor(),
+                transforms.Normalize(mean=(0.5, 0.5, 0.5),
                                   std=(0.5, 0.5, 0.5))])
         mnist = torchvision.datasets.MNIST(root='../../data/', train=True, transform=transform, download=True)
-        data_loader = torch.utils.data.DataLoader(dataset=mnist, batch_size=self.batch_size,
-                                                  shuffle=False, num_workers=16, pin_memory=True)
+        # data_loader = torch.utils.data.DataLoader(dataset=mnist, batch_size=self.batch_size,
+        #                                           shuffle=False, num_workers=16, pin_memory=True)
+        data_loader = torch.zeros_like(mnist.train_data).to(device=self.device, dtype=torch.float32)
+        for idx, (image, _) in enumerate(mnist):
+            data_loader[idx] = image
+        data_loader = data_loader.reshape(-1, self.batch_size, 28, 28)
 
         # -- Number of batches -- #
         num_batches = len(data_loader)
@@ -67,8 +69,10 @@ class GeneralAdversarialNetwork:
         for epoch in range(self.num_epochs):
             real_images = None
             fake_images = None
-            for batch_idx, (real_images, _) in enumerate(data_loader):
+            # for batch_idx, (real_images, _) in enumerate(data_loader):
+            for batch_idx, real_images in enumerate(data_loader):
                 real_images = real_images.reshape(self.batch_size, -1).to(device=self.device, dtype=torch.float32)
+
                 # -- Reset gradients -- #
                 self.D.optimizer.zero_grad()
                 self.G.optimizer.zero_grad()
@@ -103,6 +107,9 @@ class GeneralAdversarialNetwork:
 
                 # -- Log events -- #
                 if (batch_idx + 1) % 100 == 0:
+                    plt.figure()
+                    plt.imshow(denorm(real_images[0].view(28, 28)), cmap='gray')
+                    plt.show()
                     print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'
                           .format(epoch + 1, self.num_epochs, batch_idx + 1, num_batches, d_loss.item(), g_loss.item(),
                                   real_scores.mean().item(), fake_scores.mean().item()))
