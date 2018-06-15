@@ -107,9 +107,6 @@ class GeneralAdversarialNetwork:
 
                 # -- Log events -- #
                 if (batch_idx + 1) % 100 == 0:
-                    plt.figure()
-                    plt.imshow(denorm(real_images[0].view(28, 28)), cmap='gray')
-                    plt.show()
                     print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'
                           .format(epoch + 1, self.num_epochs, batch_idx + 1, num_batches, d_loss.item(), g_loss.item(),
                                   real_scores.mean().item(), fake_scores.mean().item()))
