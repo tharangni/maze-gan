@@ -6,11 +6,11 @@ import argparse
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from tensorboardX import SummaryWriter
-from maze_gen import check_maze, draw_maze
-from gan import GAN
+from maze_gen import check_maze, draw_maze, gen_maze_data
 
 def_dir = 'maze_results'
+# Folders should have the same format
+model_choices = ['VGAN', 'DCGAN', 'BGAN', 'CNNGAN']
 
 
 def visualise_results(dir, eg_no):
@@ -111,9 +111,15 @@ def visualise_loss(m_dir, r_dir):
     plt.show()
 
 
+def generate_image_data(args):
+    training_loc = "CNN/training_data/"
+    if not os.path.exists(training_loc):
+        os.makedirs(training_loc)
+    gen_maze_data(args.N, args.mx, args.my, save_to_file=True, dir=training_loc)
+
+
 def start():
     # look for cmd arguments here
-
     parser = argparse.ArgumentParser(description='Run GAN or visualise maze.')
     parser.add_argument('--v', '--visualise', action='store', nargs=2, help='Visualise a sample of fake results')
     parser.add_argument('--t', '--test', action='store', nargs=2, help='Test fake results for a sample')
@@ -130,7 +136,9 @@ def start():
                         default=200)  # i.e. number of fake mazes to generate
     parser.add_argument('--batch_size', help='Size of batch to use (Must be compatible with N)', type=int, default=100)
     parser.add_argument('--maze_dir', help='Directory results are stored in', type=str, default=def_dir)
-
+    parser.add_argument('--model', help='Choose a model to use', choices=model_choices, type=str,
+                        default=model_choices[0])
+    # parser.add_argument('--gen_images', help='Generate images for training data', type=int, default=200)
     # TODO check batch size is appropoate for the N given
 
     args = parser.parse_args()
@@ -143,14 +151,19 @@ def start():
         all_results(args.a[0])
     elif args.vl:
         visualise_loss(args.vl[0], args.vl[1])
+    # elif args.gen_images:
+    #    generate_image_data(args)
     else:
         device = torch.device('cpu' if torch.cuda.is_available() else 'cpu')
 
-        if not os.path.exists(args.maze_dir):
-            os.makedirs(args.maze_dir)
+        if not os.path.exists(args.model + "/" + args.maze_dir):
+            os.makedirs(args.model + "/" + args.maze_dir)
 
-        writer = SummaryWriter()
-        gan = GAN(device,
+        #_GAN = __import__(args.model+".gan", globals(), locals(),  ['GAN'])
+        module = __import__(args.model+".gan", fromlist=["GAN"])
+        _GAN = getattr(module, "GAN")
+        # check model
+        gan = _GAN(device,
                   args.input_size,
                   args.hidden_size,
                   args.num_epochs,
@@ -158,13 +171,10 @@ def start():
                   args.mx,
                   args.my,
                   args.N,
-                  args.maze_dir,
-                  writer)
+                  args.maze_dir)
 
         # train
         gan.train()
-        #writer.export_scalars_to_json("./tensorboard_data.json") # use this istead of pickle??
-        writer.close()
 
     # save gan
 
