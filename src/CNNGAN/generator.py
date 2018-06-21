@@ -22,7 +22,8 @@ class Generator():
         self.maze_size = maze_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.model = G(10, output_size, 244)#self.input_size)
+        #input dim
+        self.model = G(1, output_size, self.input_size)
         # set device
         self.model = self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
@@ -70,8 +71,8 @@ class G(nn.Module):
         self.input_size = input_size
 
         self.fc = nn.Sequential(
-            nn.Linear(self.input_dim, 1024),
-            nn.BatchNorm1d(1024),
+            nn.Linear(self.input_dim, 1024),#1024
+            nn.BatchNorm1d(1024),#1024
             nn.ReLU(),
             nn.Linear(1024, 128 * (self.input_size // 4) * (self.input_size // 4)),
             nn.BatchNorm1d(128 * (self.input_size // 4) * (self.input_size // 4)),

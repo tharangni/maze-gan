@@ -58,7 +58,7 @@ class Discriminator(nn.Module):
         ##Fake Data BCE_Loss
         # Generate fake data first
 
-        z = torch.randn(self.batch_size, input_size).to(self.device)
+        z = torch.randn(self.batch_size, 244).to(self.device)#input_size).to(self.device)
         #z = torch.randn(mazes[0].size()).to(self.device)
         print("G input ", z.size())
         fake_mazes = G(z)
