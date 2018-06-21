@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import torch.nn as nn
+from torchvision import models
 from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
 
 
@@ -20,14 +21,7 @@ class Generator():
         self.maze_size = maze_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.model = nn.Sequential(
-            nn.Linear(input_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, maze_size),
-            # nn.Tanh())
-            nn.Sigmoid())
+        self.model = models.alexnet()
         # set device
         self.model = self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)

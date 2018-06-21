@@ -6,7 +6,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from maze_gen import check_maze, draw_maze, gen_maze_data
+from maze_gen import check_maze, draw_maze
 
 def_dir = 'maze_results'
 # Folders should have the same format
@@ -137,7 +137,7 @@ def start():
     parser.add_argument('--batch_size', help='Size of batch to use (Must be compatible with N)', type=int, default=100)
     parser.add_argument('--maze_dir', help='Directory results are stored in', type=str, default=def_dir)
     parser.add_argument('--model', help='Choose a model to use', choices=model_choices, type=str,
-                        default=model_choices[0])
+                        default=model_choices[3])
     # parser.add_argument('--gen_images', help='Generate images for training data', type=int, default=200)
     # TODO check batch size is appropoate for the N given
 

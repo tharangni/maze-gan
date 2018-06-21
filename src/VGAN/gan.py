@@ -3,6 +3,7 @@ import pickle
 import torch
 import csv
 import torch.nn as nn
+from utils import dump_file
 from torchvision import transforms
 from tensorboardX import SummaryWriter
 from VGAN.generator import Generator
@@ -35,10 +36,6 @@ class GAN:
         self.maze_dir = maze_dir
         self.model_dir = "models"
         self.path = "VGAN/"
-
-    def denorm(self, x):
-        out = (x + 1) / 2
-        return out.clamp(0, 1)
 
     def reset_grad(self):
         self.D.optimizer.zero_grad()
@@ -126,9 +123,3 @@ class GAN:
 
         self.writer.export_scalars_to_json("./tensorboard_data.json")  # use this istead of pickle??
         self.writer.close()
-
-
-def dump_file(loc, data):
-    output = open(loc, 'wb')
-    pickle.dump(data, output)
-    output.close()

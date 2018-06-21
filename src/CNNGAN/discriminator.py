@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torchvision import models
 from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
 
 
@@ -15,19 +16,11 @@ class Discriminator:
         self.hidden_size = hidden_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.model = nn.Sequential(
-            nn.Linear(maze_size, hidden_size),
-            nn.LeakyReLU(0.2),
-            nn.Dropout(0.3),
-            nn.Linear(hidden_size, hidden_size),
-            nn.LeakyReLU(0.2),
-            nn.Dropout(0.3),
-            nn.Linear(hidden_size, 1),
-            nn.Sigmoid())
+        self.model = models.alexnet()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
         self.writer = writer
-        input = (torch.rand([batch_size - 1, maze_size]))
-        # writer.add_graph(model=self.model, input_to_model=(input,), verbose=True)
+        #input = (torch.rand([batch_size - 1, maze_size]))
+        #writer.add_graph(model=self.model, input_to_model=(input,), verbose=True)
         self.model = self.model.to(self.device)
 
     def train(self,
@@ -41,9 +34,6 @@ class Discriminator:
         # Loss starts (x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
 
         reset_grad()
-        test_tensor = torch.tensor([0.75]).to(self.device)
-        m = RelaxedBernoulli(test_tensor, probs=mazes)
-        mazes = m.sample()
         outputs = self.model(mazes)
         d_loss_real = loss_criterion(outputs, real_labels)
         d_loss_real.backward()
@@ -53,9 +43,8 @@ class Discriminator:
         # Generate fake data first
         z = torch.randn(self.batch_size, input_size).to(self.device)
         fake_mazes = G(z)
-        test_tensor = torch.tensor([0.75]).to(self.device)
-        m = RelaxedBernoulli(test_tensor, probs=fake_mazes)
-        fake_mazes = m.sample()
+        print("Fake mazes")
+        print(fake_mazes.shape())
         outputs = self.model(fake_mazes)
         # Fake data loss
         fake_score = outputs
