@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from helpers.Checkpoint import Checkpoint
+
 
 class Discriminator(nn.Module):
     def __init__(self, opts):
@@ -19,12 +21,10 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2),
             nn.Linear(self.hidden_size, 1),
             nn.Sigmoid())
-
-        if opts.resume:
-            self.model.load_state_dict(torch.load('models/Discriminator.ckpt'))
-
-        self.model = self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        if opts.resume:
+            Checkpoint(None, 'VanillaMazes', 'discriminator').load(self)
+        self.model = self.model.to(self.device)
 
     def forward(self, args):
         real_scores = self.model(args.real_mazes)
@@ -37,7 +37,6 @@ class Discriminator(nn.Module):
         fake_loss = args.criterion(args.fake_scores, args.fake)
         loss = real_loss + fake_loss
 
-        args.reset_grad()
         loss.backward()
         self.optimizer.step()
 

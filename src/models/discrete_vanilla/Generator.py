@@ -1,6 +1,10 @@
 import torch
 import torch.nn as nn
 
+from helpers.Checkpoint import Checkpoint
+from helpers import GumbelSoftmaxTrick
+from helpers import HeavisideTrick
+
 
 class Generator(nn.Module):
 
@@ -13,6 +17,7 @@ class Generator(nn.Module):
         self.num_epochs = opts.num_epochs
         self.batch_size = opts.batch_size
         self.learning_rate = opts.learning_rate
+        self.temperature = opts.temp
 
         self.model = nn.Sequential(
             nn.Linear(self.latent_size, self.hidden_size),
@@ -20,22 +25,27 @@ class Generator(nn.Module):
             nn.Linear(self.hidden_size, self.hidden_size),
             nn.ReLU(),
             nn.Linear(self.hidden_size, self.maze_size),
-            nn.Tanh())
-        if opts.resume:
-            self.model.load_state_dict(torch.load('models/Generator.ckpt'))
-        self.model = self.model.to(self.device)
+            # nn.Sigmoid()
+            nn.Tanh()
+        )
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        if opts.resume:
+            Checkpoint(None, 'VanillaMazes', 'generator').load(self)
+        self.model = self.model.to(device=self.device)
 
-    # TODO: implement gumbel-softmax-trick
     def forward(self, z):
-        soft_maze = self.model(z)
-        # GUMBEL SOFTMAX TRICK
-        hard_maze = 'gumbel_softmax'
-        return hard_maze
+        mazes = self.model(z)
+
+        # -- GumbelSoftmaxTrick -- #
+        # maze_class_prob = torch.stack((1 - mazes, mazes), dim=2)
+        # maze_class_logits = torch.log(maze_class_prob)
+        # return GumbelSoftmaxTrick.pass_through(maze_class_logits, self.temperature)
+
+        # -- HeavisidePassThroughTrick -- #
+        return HeavisideTrick.pass_through(mazes)
 
     def backward(self, args):
         loss = args.criterion(args.scores, args.real)
-        args.reset_grad()
         loss.backward()
         self.optimizer.step()
 

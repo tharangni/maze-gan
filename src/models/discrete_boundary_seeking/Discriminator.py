@@ -23,12 +23,12 @@ class Discriminator(nn.Module):
             nn.Sigmoid())
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         if opts.resume:
-            Checkpoint(None, 'MNIST', 'discriminator').load(self)
-        self.model = self.model.to(device=self.device)
+            Checkpoint(None, 'BoundarySeekingGumbelMazes', 'discriminator').load(self)
+        self.model = self.model.to(self.device)
 
     def forward(self, args):
-        real_scores = self.model(args.real_images)
-        fake_scores = self.model(args.fake_images)
+        real_scores = self.model(args.real_mazes)
+        fake_scores = self.model(args.fake_mazes)
 
         return real_scores, fake_scores
 

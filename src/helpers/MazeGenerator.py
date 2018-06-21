@@ -5,6 +5,7 @@
 # FB - 20121214
 # Modified by Peter O'Conor
 import numpy as np
+import torch
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import label
 
@@ -30,8 +31,8 @@ def check_maze(maze):
 
         if np.all(indexes[:, :] != 0) and np.all(indexes[0, :] != mx - 1) and np.all(indexes[1, :] != my - 1):
             return False
-        else:
-            return True
+
+    return True
 
 
 def generate_maze(mx, my):
@@ -47,7 +48,7 @@ def generate_maze(mx, my):
     :return: Array(my,mx)[bool]
     """
     maze = np.zeros((my, mx), dtype=np.bool)
-    dx = [0, 1, 0, -1];
+    dx = [0, 1, 0, -1]
     dy = [-1, 0, 1, 0]  # 4 directions to move in the maze
     stack = [(np.random.randint(0, mx), np.random.randint(0, my))]
 
@@ -98,13 +99,12 @@ def draw_maze(maze):
 
 
 def gen_maze_data(N, mx, my):
-    data = []
+    data = torch.empty([N, mx,my])
     for i in range(N):
-        maze = generate_maze(mx, my)
+        data[i] = torch.from_numpy(generate_maze(mx, my))
         if (i + 1) % 100 == 0:
             print("Generated {}/{} mazes...".format(i+1, N))
-        data.append(maze)
-    return np.array(data)
+    return data
 
 # if __name__ == '__main__':
 #     demo_generate_maze(16, 16)
