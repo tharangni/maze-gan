@@ -42,10 +42,10 @@ class GAN:
         self.training_dir = "training_data/"
         self.data_loader = self.load_data()
         out_dim = self.data_loader.__iter__().__next__()[0]
-        print("=======================")
-        print(out_dim.size())
-        print(out_dim.shape)
-        print(out_dim.shape[1])
+        #print("=======================")
+        #print(out_dim.size())
+        #print(out_dim.shape)
+        #print(out_dim.shape[1])
         self.G = Generator(self.device, input_size, hidden_size, mx * my, num_epochs, batch_size, self.writer, out_dim.shape[0])
         self.D = Discriminator(self.device, hidden_size, mx * my, num_epochs, batch_size, self.writer)
 
@@ -78,6 +78,7 @@ class GAN:
 
         for epoch in range(self.num_epochs):
             for local_batch, maze_set in enumerate(data_loader):
+                #print("Mazxe", maze_set.shape)
                 # maze_set = maze_set.reshape(self.batch_size, -1).to(self.device).float()
                 # l + torch.randn(1, 10)*(r-l) - USING SOFT LABELS INSTEAD OF HARD
                 # Real: 0.0 - 0.1
@@ -118,10 +119,10 @@ class GAN:
 
                 if (local_batch + 1) % 100 == 0 or (epoch + 1) % 100 == 0:
                     for name, param in self.G.model.named_parameters():
-                        self.writer.add_histogram("VGAN/Generator/" + name, param.clone().cpu().data.numpy(), epoch + 1)
+                        self.writer.add_histogram("CNNGAN/Generator/" + name, param.clone().cpu().data.numpy(), epoch + 1)
 
                     for name, param in self.D.model.named_parameters():
-                        self.writer.add_histogram("VGAN/Discriminator/" + name, param.clone().cpu().data.numpy(),
+                        self.writer.add_histogram("CNNGAN/Discriminator/" + name, param.clone().cpu().data.numpy(),
                                                   epoch + 1)
 
                     print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'
@@ -130,11 +131,15 @@ class GAN:
 
             # Save real mazes
             if (epoch + 1) == 1:
-                maze_set = maze_set.reshape(maze_set.size(0), self.mx, self.my)
+                #print(maze_set.shape)
+                #maze_set = maze_set.reshape(maze_set.size(0), self.mx, self.my)
+                #maze_set = maze_set.reshape(maze_set.size(0), 3, 244, 244)
                 dump_file(os.path.join(self.path + self.maze_dir, 'real_mazes.pickle'), maze_set)
 
             # Save sampled mazes
-            fake_mazes = fake_mazes.reshape(fake_mazes.size(0), self.mx, self.my)
+            #fake_mazes = fake_mazes.reshape(fake_mazes.size(0), self.mx, self.my)
+            #print(fake_mazes.shape)
+            fake_mazes = fake_mazes.reshape(fake_mazes.size(0), 3, 244, 244)
             dump_file(os.path.join(self.path + self.maze_dir, 'fake_mazes-{}.pickle'.format(epoch + 1)), fake_mazes)
 
         if not os.path.exists(self.path + self.model_dir):
@@ -180,7 +185,7 @@ def default_flist_reader(flist):
 
     return imlist
 
-
+#For data loading
 class ImageFilelist(data.Dataset):
     def __init__(self, root, flist, transform=None, target_transform=None,
                  flist_reader=default_flist_reader, loader=default_loader):

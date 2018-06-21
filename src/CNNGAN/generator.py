@@ -15,7 +15,7 @@ class Generator():
                  num_epochs,
                  batch_size,
                  writer,
-                 output_size):
+                 output_dim):
         self.device = device
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -23,12 +23,12 @@ class Generator():
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         #input dim
-        self.model = G(1, output_size, self.input_size)
+        self.model = G(input_size, output_dim, input_size)
         # set device
         self.model = self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
         self.writer = writer
-        print("G ", self.model)
+        #print("G ", self.model)
 
     def train(self, D, loss_criterion, real_labels, reset_grad):
         reset_grad()
@@ -74,22 +74,27 @@ class G(nn.Module):
             nn.Linear(self.input_dim, 1024),#1024
             nn.BatchNorm1d(1024),#1024
             nn.ReLU(),
-            nn.Linear(1024, 128 * (self.input_size // 4) * (self.input_size // 4)),
-            nn.BatchNorm1d(128 * (self.input_size // 4) * (self.input_size // 4)),
+            nn.Linear(1024, 128 * (self.input_size // 4) * (self.input_size // 4)),#128
+            nn.BatchNorm1d(128 * (self.input_size // 4) * (self.input_size // 4)),#128
             nn.ReLU(),
         )
         self.deconv = nn.Sequential(
             nn.ConvTranspose2d(128, 64, 4, 2, 1),
-            nn.BatchNorm2d(64),
+            nn.BatchNorm2d(64),#64
             nn.ReLU(),
-            nn.ConvTranspose2d(64, self.output_dim, 4, 2, 1),
-            nn.Tanh(),
+            nn.ConvTranspose2d(64, self.output_dim, 240, 2, 1),#check what 240 does
+            nn.Tanh(),#change to sigmoids
         )
         initialize_weights(self)
 
     def forward(self, input):
+        #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        #print(input.shape)
         x = self.fc(input)
+        #print(x.shape)
         x = x.view(-1, 128, (self.input_size // 4), (self.input_size // 4))
+        #print(x.shape)
         x = self.deconv(x)
-
+        #print(x.shape)
+        #print("!!!!!!!!!!!!!!!")
         return x

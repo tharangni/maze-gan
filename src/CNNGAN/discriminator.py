@@ -22,7 +22,7 @@ class Discriminator(nn.Module):
         modules = list(self.model.classifier.children())
         modules.append(nn.Sigmoid())
         self.model.classifier = nn.Sequential(*modules)
-        print("D ", self.model)
+        #print("D ", self.model)
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
         self.writer = writer
@@ -48,9 +48,9 @@ class Discriminator(nn.Module):
         # Loss starts (x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
 
         reset_grad()
-        print("D inputs ", mazes.size())
+        #print("D inputs ", mazes.size())
         outputs = self.model(mazes)
-        print("D ouptuts ", outputs.size())
+        #print("D ouptuts ", outputs.size())
         d_loss_real = loss_criterion(outputs, real_labels)
         d_loss_real.backward()
         real_score = outputs
@@ -58,12 +58,12 @@ class Discriminator(nn.Module):
         ##Fake Data BCE_Loss
         # Generate fake data first
 
-        z = torch.randn(self.batch_size, 244).to(self.device)#input_size).to(self.device)
+        z = torch.randn(self.batch_size, input_size).to(self.device)#input_size).to(self.device)
         #z = torch.randn(mazes[0].size()).to(self.device)
-        print("G input ", z.size())
+        #print("G input ", z.size())
         fake_mazes = G(z)
-        print("Fake mazes")
-        print("G outputs ", fake_mazes.size())
+        #print("Fake mazes")
+        #print("G outputs ", fake_mazes.size())
         outputs = self.model(fake_mazes)
         # Fake data loss
         fake_score = outputs
