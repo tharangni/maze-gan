@@ -9,8 +9,12 @@ lib64
 *.ipynb
 temp
 .idea/
-models/
-maze_results/
+**/models/
+**/maze_results/
+**/runs/
+**/tensorboard_data.json
+
+**/training_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

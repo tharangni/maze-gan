@@ -29,17 +29,17 @@ class GAN:
                  maze_dir):
         self.device = device
         self.writer = SummaryWriter()
-        # self.set_up_data()
+        self.maze_dir = maze_dir
+        self.model_dir = "models"
+        self.path = "CNNGAN/"
+        self.training_dir = "training_data/"
         self.hidden_size = hidden_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.mx = mx
         self.my = my
         self.N = N
-        self.maze_dir = maze_dir
-        self.model_dir = "models"
-        self.path = "CNNGAN/"
-        self.training_dir = "training_data/"
+        self.set_up_data()
         self.data_loader = self.load_data()
         out_dim = self.data_loader.__iter__().__next__()[0]
         #print("=======================")
@@ -58,10 +58,10 @@ class GAN:
         self.G.optimizer.zero_grad()
 
     def set_up_data(self):
-        if not os.path.exists(self.training_dir):
-            os.makedirs(self.training_dir)
+        if not os.path.exists(self.path + self.training_dir):
+            os.makedirs(self.path + self.training_dir)
 
-        if len([name for name in os.listdir(self.training_dir) if os.path.isfile(name)]) < 1:
+        if len([name for name in os.listdir(self.path + self.training_dir) if os.path.isfile(name)]) < 1:
             self.create_training_data()
 
     def train(self):
