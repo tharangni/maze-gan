@@ -130,7 +130,7 @@ def start():
     parser.add_argument('--my', help='No. rows in maze', type=int, default=4)
     parser.add_argument('--N', help='No. of traning examples to generate', type=int, default=200)
     # -------------------------------------------------------#
-    parser.add_argument('--input_size', help='No. inputs for generator', type=int, default=4)
+    parser.add_argument('--input_size', help='No. inputs for generator', type=int, default=10)
     parser.add_argument('--hidden_size', help='No. of hidden neurons', type=int, default=8)
     parser.add_argument('--num_epochs', help='No. of epochs', type=int,
                         default=200)  # i.e. number of fake mazes to generate

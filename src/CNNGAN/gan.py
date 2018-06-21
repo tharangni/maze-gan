@@ -29,8 +29,7 @@ class GAN:
                  maze_dir):
         self.device = device
         self.writer = SummaryWriter()
-        self.G = Generator(self.device, input_size, hidden_size, mx * my, num_epochs, batch_size, self.writer)
-        self.D = Discriminator(self.device, hidden_size, mx * my, num_epochs, batch_size, self.writer)
+        # self.set_up_data()
         self.hidden_size = hidden_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
@@ -41,6 +40,14 @@ class GAN:
         self.model_dir = "models"
         self.path = "CNNGAN/"
         self.training_dir = "training_data/"
+        self.data_loader = self.load_data()
+        out_dim = self.data_loader.__iter__().__next__()[0]
+        print("=======================")
+        print(out_dim.size())
+        print(out_dim.shape)
+        print(out_dim.shape[1])
+        self.G = Generator(self.device, input_size, hidden_size, mx * my, num_epochs, batch_size, self.writer, out_dim.shape[0])
+        self.D = Discriminator(self.device, hidden_size, mx * my, num_epochs, batch_size, self.writer)
 
     def denorm(self, x):
         out = (x + 1) / 2
@@ -59,8 +66,7 @@ class GAN:
 
     def train(self):
 
-        # self.set_up_data()
-        data_loader = self.load_data()
+        data_loader = self.data_loader
 
         # Creates a criterion that measures the Binary Cross Entropy between the target and the output
         loss_criterion = nn.BCELoss()
@@ -72,7 +78,6 @@ class GAN:
 
         for epoch in range(self.num_epochs):
             for local_batch, maze_set in enumerate(data_loader):
-                print(maze_set.size())
                 # maze_set = maze_set.reshape(self.batch_size, -1).to(self.device).float()
                 # l + torch.randn(1, 10)*(r-l) - USING SOFT LABELS INSTEAD OF HARD
                 # Real: 0.0 - 0.1

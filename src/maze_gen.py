@@ -90,29 +90,16 @@ def demo_generate_maze(mx, my): # width and height of the maze
 #         plt.close()
 
 def draw_maze(maze, close=True, time=1.5, save_to_file=False, num="NA", dir="NA"):
-    plt.rcParams['savefig.pad_inches'] = 0
     ax = plt.axes([0, 0, 1, 1], frameon=False)
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
     plt.autoscale(tight=True)
-    plt.rcParams['savefig.pad_inches'] = 0
-    # fig = plt.figure()
-    # fig.tight_layout()
-    # #fig.add_axes([0, 0, 1, 1])
-    # ax = plt.axes([0, 0, 1, 1], frameon=False)
-    # #plt.axis("off")
-    # #plt.axis("off")
-    # ax.get_xaxis().set_visible(False)
-    # ax.get_yaxis().set_visible(False)
-    # plt.autoscale(tight=True)
-    plt.imshow(maze, cmap='gray')
-    #plt.show(block=False)
+    plt.imshow(maze, cmap='gray', aspect='auto')#makes image square but turn blocks into rectangles
 
     #plt.axis("tight")
     if save_to_file:
         name = dir + 'training_maze' + str(num) + '.png'
-        #plt.imshow('image', np.array(maze))
-        plt.savefig(name)#, bbox_inches="tight", pad_inches=0)
+        plt.savefig(name, dpi=80)#, bbox_inches="tight", pad_inches=0)
         plt.close()
     else:
         if close:
