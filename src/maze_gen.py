@@ -7,18 +7,25 @@
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
-from scipy.ndimage.measurements import label
+from scipy.ndimage import label
 imgx = 500; imgy = 500
 
 def check_maze(maze):
     # single connected-component
+
     labeled_array, num_features = label(maze)
+    
     npmaze = np.array(maze)
     mx, my = npmaze.shape
     if num_features > 1:
         return False
     # no loops
-    maze = 1 - maze
+    for i in range(mx-1):
+        for j in range(my-1):
+            if maze[i,j] == 1:
+                if maze[i+1, j] == 1 and maze[i, j+1] == 1 and maze[i+1, j+1] == 1:
+                    return False
+    maze = maze - 1
     s = [[1,1,1],
          [1,1,1],
          [1,1,1]]
@@ -28,7 +35,7 @@ def check_maze(maze):
 
         if np.all(indexes[:, :] != 0) and np.all(indexes[0, :] != mx-1) and np.all(indexes[1, :] != my-1):
             return False
-        else: return True
+    return True
 
 
 def generate_maze(mx, my):
