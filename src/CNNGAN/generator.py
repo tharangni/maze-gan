@@ -74,7 +74,7 @@ class G(nn.Module):
             nn.Linear(self.input_dim, 1024),#1024
             nn.BatchNorm1d(1024),#1024
             nn.ReLU(),
-            nn.Linear(1024, 128 * (self.input_size // 4) * (self.input_size // 4)),#128
+            nn.Linear(1024, 128 * (self.input_size // 4) * (self.input_size // 4)),#128 #compression???
             nn.BatchNorm1d(128 * (self.input_size // 4) * (self.input_size // 4)),#128
             nn.ReLU(),
         )
@@ -82,12 +82,13 @@ class G(nn.Module):
             nn.ConvTranspose2d(128, 64, 4, 2, 1),
             nn.BatchNorm2d(64),#64
             nn.ReLU(),
-            nn.ConvTranspose2d(64, self.output_dim, 240, 2, 1),#check what 240 does
-            nn.Tanh(),#change to sigmoids
+            nn.ConvTranspose2d(64, self.output_dim, 240, 2, 1),
+            nn.Sigmoid(),#change to sigmoids
         )
         initialize_weights(self)
 
     def forward(self, input):
+        #print("input_size ", self.input_size)
         #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         #print(input.shape)
         x = self.fc(input)

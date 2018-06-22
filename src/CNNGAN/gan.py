@@ -16,38 +16,32 @@ from utils import dump_file
 
 # Device configuration
 class GAN:
-
     def __init__(self,
                  device,
-                 input_size,
-                 hidden_size,
-                 num_epochs,
-                 batch_size,
-                 mx,
-                 my,
-                 N,
-                 maze_dir):
+                 args):
         self.device = device
         self.writer = SummaryWriter()
-        self.maze_dir = maze_dir
+        self.maze_dir = args.maze_dir
         self.model_dir = "models"
         self.path = "CNNGAN/"
-        self.training_dir = "training_data/"
-        self.hidden_size = hidden_size
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
-        self.mx = mx
-        self.my = my
-        self.N = N
+        self.training_dir = args.td
+        self.hidden_size = args.hidden_size
+        self.num_epochs = args.num_epochs
+        self.batch_size = args.batch_size
+        self.mx = args.mx
+        self.my = args.my
+        self.N = args.N
         self.set_up_data()
         self.data_loader = self.load_data()
         out_dim = self.data_loader.__iter__().__next__()[0]
-        #print("=======================")
-        #print(out_dim.size())
-        #print(out_dim.shape)
-        #print(out_dim.shape[1])
-        self.G = Generator(self.device, input_size, hidden_size, mx * my, num_epochs, batch_size, self.writer, out_dim.shape[0])
-        self.D = Discriminator(self.device, hidden_size, mx * my, num_epochs, batch_size, self.writer)
+        # print("=======================")
+        # print(out_dim.size())
+        # print(out_dim.shape)
+        # print(out_dim.shape[1])
+        self.G = Generator(self.device, args.input_size, args.hidden_size, args.mx * args.my, args.num_epochs, args.batch_size, self.writer,
+                           out_dim.shape[0])
+        self.D = Discriminator(self.device, args.hidden_size, args.mx * args.my, args.num_epochs, args.batch_size, self.writer)
+
 
     def denorm(self, x):
         out = (x + 1) / 2
@@ -58,10 +52,10 @@ class GAN:
         self.G.optimizer.zero_grad()
 
     def set_up_data(self):
-        if not os.path.exists(self.path + self.training_dir):
-            os.makedirs(self.path + self.training_dir)
+        if not os.path.exists(self.training_dir):
+            os.makedirs(self.training_dir)
 
-        if len([name for name in os.listdir(self.path + self.training_dir) if os.path.isfile(name)]) < 1:
+        if len([name for name in os.listdir(self.training_dir) if os.path.isfile(name)]) < 1:
             self.create_training_data()
 
     def train(self):
@@ -78,7 +72,7 @@ class GAN:
 
         for epoch in range(self.num_epochs):
             for local_batch, maze_set in enumerate(data_loader):
-                #print("Mazxe", maze_set.shape)
+                # print("Mazxe", maze_set.shape)
                 # maze_set = maze_set.reshape(self.batch_size, -1).to(self.device).float()
                 # l + torch.randn(1, 10)*(r-l) - USING SOFT LABELS INSTEAD OF HARD
                 # Real: 0.0 - 0.1
@@ -119,7 +113,8 @@ class GAN:
 
                 if (local_batch + 1) % 100 == 0 or (epoch + 1) % 100 == 0:
                     for name, param in self.G.model.named_parameters():
-                        self.writer.add_histogram("CNNGAN/Generator/" + name, param.clone().cpu().data.numpy(), epoch + 1)
+                        self.writer.add_histogram("CNNGAN/Generator/" + name, param.clone().cpu().data.numpy(),
+                                                  epoch + 1)
 
                     for name, param in self.D.model.named_parameters():
                         self.writer.add_histogram("CNNGAN/Discriminator/" + name, param.clone().cpu().data.numpy(),
@@ -131,18 +126,18 @@ class GAN:
 
             # Save real mazes
             if (epoch + 1) == 1:
-                #print(maze_set.shape)
-                #maze_set = maze_set.reshape(maze_set.size(0), self.mx, self.my)
-                #maze_set = maze_set.reshape(maze_set.size(0), 3, 244, 244)
-                dump_file(os.path.join(self.path + self.maze_dir, 'real_mazes.pickle'), maze_set)
+                # print(maze_set.shape)
+                # maze_set = maze_set.reshape(maze_set.size(0), self.mx, self.my)
+                # maze_set = maze_set.reshape(maze_set.size(0), 3, 244, 244)
+                dump_file(os.path.join(self.maze_dir, 'real_mazes.pickle'), maze_set)
 
             # Save sampled mazes
-            #fake_mazes = fake_mazes.reshape(fake_mazes.size(0), self.mx, self.my)
-            #print(fake_mazes.shape)
+            # fake_mazes = fake_mazes.reshape(fake_mazes.size(0), self.mx, self.my)
+            # print(fake_mazes.shape)
             fake_mazes = fake_mazes.reshape(fake_mazes.size(0), 3, 244, 244)
-            dump_file(os.path.join(self.path + self.maze_dir, 'fake_mazes-{}.pickle'.format(epoch + 1)), fake_mazes)
+            dump_file(os.path.join(self.maze_dir, 'fake_mazes-{}.pickle'.format(epoch + 1)), fake_mazes)
 
-        if not os.path.exists(self.path + self.model_dir):
+        if not os.path.exists(self.model_dir):
             os.makedirs(self.path + self.model_dir)
         torch.save(self.G.model.state_dict(), self.path + self.model_dir + '/G.ckpt')
         torch.save(self.D.model.state_dict(), self.path + self.model_dir + '/D.ckpt')
@@ -151,13 +146,14 @@ class GAN:
         self.writer.close()
 
     def create_training_data(self):
-        gen_maze_data(self.N, self.mx, self.my, save_to_file=True, dir=self.path + self.training_dir)
+        print("Creating data here ", self.training_dir)
+        gen_maze_data(self.N, self.mx, self.my, save_to_file=True, dir=self.training_dir)
 
     def load_data(self):
         train_loader = torch.utils.data.DataLoader(
             ImageFilelist(
-                root=self.path + self.training_dir,
-                flist=os.listdir(self.path + self.training_dir),
+                root=self.training_dir,
+                flist=os.listdir(self.training_dir),
                 transform=transforms.Compose([transforms.RandomSizedCrop(224),
                                               transforms.RandomHorizontalFlip(),
                                               transforms.ToTensor(),
@@ -185,7 +181,8 @@ def default_flist_reader(flist):
 
     return imlist
 
-#For data loading
+
+# For data loading
 class ImageFilelist(data.Dataset):
     def __init__(self, root, flist, transform=None, target_transform=None,
                  flist_reader=default_flist_reader, loader=default_loader):

@@ -8,7 +8,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from maze_gen import check_maze, draw_maze
 
-def_dir = 'maze_results'
+maze_dir = 'maze_results/'
+training_dir = 'training_data/'
 # Folders should have the same format
 model_choices = ['VGAN', 'DCGAN', 'BGAN', 'CNNGAN']
 
@@ -135,9 +136,10 @@ def start():
     parser.add_argument('--num_epochs', help='No. of epochs', type=int,
                         default=200)  # i.e. number of fake mazes to generate
     parser.add_argument('--batch_size', help='Size of batch to use (Must be compatible with N)', type=int, default=100)
-    parser.add_argument('--maze_dir', help='Directory results are stored in', type=str, default=def_dir)
+    parser.add_argument('--maze_dir', help='Directory results are stored in', type=str, default=maze_dir)
     parser.add_argument('--model', help='Choose a model to use', choices=model_choices, type=str,
                         default=model_choices[3])
+    parser.add_argument('--td', '--training_directory', help='Training directory, only applicaple for CNN', default=training_dir, type=str)
     # parser.add_argument('--gen_images', help='Generate images for training data', type=int, default=200)
     # TODO check batch size is appropoate for the N given
 
@@ -156,22 +158,15 @@ def start():
     else:
         device = torch.device('cpu' if torch.cuda.is_available() else 'cpu')
 
-        if not os.path.exists(args.model + "/" + args.maze_dir):
-            os.makedirs(args.model + "/" + args.maze_dir)
+        if not os.path.exists(args.maze_dir):
+            os.makedirs(args.maze_dir)
 
         #_GAN = __import__(args.model+".gan", globals(), locals(),  ['GAN'])
         module = __import__(args.model+".gan", fromlist=["GAN"])
         _GAN = getattr(module, "GAN")
         # check model
         gan = _GAN(device,
-                  args.input_size,
-                  args.hidden_size,
-                  args.num_epochs,
-                  args.batch_size,
-                  args.mx,
-                  args.my,
-                  args.N,
-                  args.maze_dir)
+                  args)
 
         # train
         gan.train()
