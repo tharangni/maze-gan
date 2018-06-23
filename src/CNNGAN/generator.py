@@ -3,7 +3,7 @@ import numpy as np
 import torch.nn as nn
 from torchvision import models
 from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
-
+import torch.nn.functional as F
 
 class Generator():
 
@@ -23,10 +23,10 @@ class Generator():
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         #input dim
-        self.model = G(input_size, output_dim, input_size)
+        self.model = G(batch_size, input_size)#input_size, output_dim, input_size)
         # set device
         self.model = self.model.to(self.device)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0002)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.002)
         self.writer = writer
         #print("G ", self.model)
 
@@ -38,7 +38,8 @@ class Generator():
         # z_discrete = np.random.choice([0, 1], size=(self.batch_size, self.input_size), p=[4./10, 6./10])
         # z_tensor = torch.from_numpy(z_discrete).to(self.device)
         # z_tensor = z_tensor.float()
-        z = torch.randn(self.batch_size, self.input_size).to(self.device)
+        z = torch.randn((self.batch_size, 100)).view(-1, 100, 1, 1)
+        #z = torch.randn(self.batch_size, self.input_size).to(self.device)
         fake_mazes = self.model(z)
 
         # gumbel-softmax?
@@ -60,42 +61,46 @@ class Generator():
         g_loss.backward()
         self.optimizer.step()
 
-from utils import initialize_weights
 class G(nn.Module):
-    # Network Architecture is exactly same as in infoGAN (https://arxiv.org/abs/1606.03657)
-    # Architecture : FC1024_BR-FC7x7x128_BR-(64)4dc2s_BR-(1)4dc2s_S
-    def __init__(self, input_dim=100, output_dim=1, input_size=32):
+    # initializers
+    def __init__(self, d=128, input_size=10):
         super(G, self).__init__()
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.input_size = input_size
+        self.deconv1 = nn.ConvTranspose2d(100, d * 8, 4, 1, 0)
+        #self.deconv1 = nn.ConvTranspose2d(100, d*8, 4, 1, 0)
+        self.deconv1_bn = nn.BatchNorm2d(d*8)
+        self.deconv2 = nn.ConvTranspose2d(d*8, d*4, 4, 2, 1)
+        self.deconv2_bn = nn.BatchNorm2d(d*4)
+        self.deconv3 = nn.ConvTranspose2d(d*4, d*2, 4, 2, 1)
+        self.deconv3_bn = nn.BatchNorm2d(d*2)
+        self.deconv4 = nn.ConvTranspose2d(d*2, d, 4, 2, 1)
+        self.deconv4_bn = nn.BatchNorm2d(d)
+        self.deconv5 = nn.ConvTranspose2d(d, 1, 4, 2, 1)
 
-        self.fc = nn.Sequential(
-            nn.Linear(self.input_dim, 1024),#1024
-            nn.BatchNorm1d(1024),#1024
-            nn.ReLU(),
-            nn.Linear(1024, 128 * (self.input_size // 4) * (self.input_size // 4)),#128 #compression???
-            nn.BatchNorm1d(128 * (self.input_size // 4) * (self.input_size // 4)),#128
-            nn.ReLU(),
-        )
-        self.deconv = nn.Sequential(
-            nn.ConvTranspose2d(128, 64, 4, 2, 1),
-            nn.BatchNorm2d(64),#64
-            nn.ReLU(),
-            nn.ConvTranspose2d(64, self.output_dim, 240, 2, 1),
-            nn.Sigmoid(),#change to sigmoids
-        )
-        initialize_weights(self)
+    # weight_init
+    def weight_init(self, mean, std):
+        for m in self._modules:
+            normal_init(self._modules[m], mean, std)
 
+    # forward method
     def forward(self, input):
-        #print("input_size ", self.input_size)
-        #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        # x = F.relu(self.deconv1(input))
+        #print("G time")
         #print(input.shape)
-        x = self.fc(input)
+        x = F.relu(self.deconv1_bn(self.deconv1(input)))
         #print(x.shape)
-        x = x.view(-1, 128, (self.input_size // 4), (self.input_size // 4))
+        x = F.relu(self.deconv2_bn(self.deconv2(x)))
         #print(x.shape)
-        x = self.deconv(x)
+        x = F.relu(self.deconv3_bn(self.deconv3(x)))
         #print(x.shape)
-        #print("!!!!!!!!!!!!!!!")
+        x = F.relu(self.deconv4_bn(self.deconv4(x)))
+        #print(x.shape)
+        #x = F.tanh(self.deconv5(x))
+        x = F.sigmoid(self.deconv5(x))
+        #print(x.shape)
+        #print("======================")
         return x
+
+def normal_init(m, mean, std):
+    if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
+        m.weight.data.normal_(mean, std)
+        m.bias.data.zero_()

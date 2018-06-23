@@ -135,7 +135,7 @@ def start():
     parser.add_argument('--hidden_size', help='No. of hidden neurons', type=int, default=8)
     parser.add_argument('--num_epochs', help='No. of epochs', type=int,
                         default=200)  # i.e. number of fake mazes to generate
-    parser.add_argument('--batch_size', help='Size of batch to use (Must be compatible with N)', type=int, default=100)
+    parser.add_argument('--batch_size', help='Size of batch to use (Must be compatible with N)', type=int, default=50)
     parser.add_argument('--maze_dir', help='Directory results are stored in', type=str, default=maze_dir)
     parser.add_argument('--model', help='Choose a model to use', choices=model_choices, type=str,
                         default=model_choices[3])
@@ -156,8 +156,12 @@ def start():
     # elif args.gen_images:
     #    generate_image_data(args)
     else:
+        if torch.cuda.is_available():
+            print("Using Cuda")
+        else:
+            print('Using Cpu :(')
         device = torch.device('cpu' if torch.cuda.is_available() else 'cpu')
-
+        print(device)
         if not os.path.exists(args.maze_dir):
             os.makedirs(args.maze_dir)
 

@@ -90,17 +90,22 @@ def demo_generate_maze(mx, my): # width and height of the maze
 #         plt.close()
 
 def draw_maze(maze, close=True, time=1.5, save_to_file=False, num="NA", dir="NA"):
-    ax = plt.axes([0, 0, 1, 1], frameon=False)
+    figsize = 500 / float(80), 500 / float(80)
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_axes([0, 0, 1, 1], frameon=False)
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
     plt.autoscale(tight=True)
-    plt.imshow(maze, cmap='gray', aspect='auto')#makes image square but turn blocks into rectangles
-
+    img_data =plt.imshow(maze, cmap='gray', aspect='auto', interpolation='nearest')#makes image square but turn blocks into rectangles
+    #plt.pause(time)
     #plt.axis("tight")
     if save_to_file:
         name = dir + 'training_maze' + str(num) + '.png'
         plt.savefig(name, dpi=80)#, bbox_inches="tight", pad_inches=0)
-        plt.close()
+        #print("img_data ",img_data.get_array().shape)
+        #plt.imsave(name, img_data.get_array(), dpi=80)#, cmap='gray')
+        #plt.close()
+        #fg.ghg
     else:
         if close:
             plt.pause(time)
