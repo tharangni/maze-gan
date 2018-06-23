@@ -15,14 +15,14 @@ def heaviside(x):
     return x_hard
 
 
-def pass_through(mazes):
+def pass_through(x):
     """
-    input: [*] continuous Tensor
+    input: [*] continuous_vanilla Tensor
     return: [*] discrete_vanilla Tensor with gradient
     """
-    mazes_hard = heaviside(mazes)
+    mazes_hard = heaviside(x)
 
-    return ((mazes_hard - mazes).detach() + mazes).to(device=DEVICE, dtype=torch.float32)
+    return ((mazes_hard - x).detach() + x).to(device=DEVICE, dtype=torch.float32)
 
 
 if __name__ == '__main__':

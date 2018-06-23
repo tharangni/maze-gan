@@ -2,10 +2,9 @@ import argparse
 import glob
 import os
 import torch
-import pickle
 from helpers.MazeGenerator import check_maze, draw_maze
 
-from models.continuous.GeneralAdversarialNetwork import GeneralAdversarialNetwork
+from models.continuous_vanilla.GeneralAdversarialNetwork import GeneralAdversarialNetwork
 from models.discrete_recurrent.DiscreteRecurrentAdversarialNetwork import DiscreteRecurrentAdversarialNetwork
 from models.discrete_vanilla.DiscreteAdversarialNetwork import DiscreteAdversarialNetwork
 from models.discrete_boundary_seeking.BoundarySeekingAdversarialNetwork import BoundarySeekingAdversarialNetwork
@@ -18,14 +17,12 @@ def visualise_results(path, eg_no):
     path = os.path.join(path, 'fake_mazes_{}.pickle'.format(eg_no))
     print('Visualising sample from {}'.format(path))
     # visualise sample from final results
-    mazes = pickle.load(open(path, 'rb'))
+    mazes = torch.load(path, map_location='cpu').detach().numpy()
+
     # print(mazes)
     # takes sample and plot
     for maze in mazes[:10]:
         print(maze)
-        # is it a valid maze?
-        if torch.cuda.is_available(): maze = maze.cpu()
-        maze = maze.detach().numpy()
         check = check_maze(maze)
         if check:
             print(check)
@@ -35,14 +32,10 @@ def visualise_results(path, eg_no):
             draw_maze(maze)
     correct = 0
     for maze in mazes:
-        maze[maze < 0.5] = 0
-        maze[maze > 0.5] = 1
-        if torch.cuda.is_available(): maze = maze.cpu()
-        maze = maze.detach().numpy()
+        maze = maze
         check = check_maze(maze)
         if check:
             correct += 1
-            draw_maze(maze)
     print(correct, ' correct out of ', len(mazes))
 
 
@@ -51,10 +44,9 @@ def visualise_training_set(path):
     path = os.path.join(path, 'real_mazes.pickle')
     print('Visualising real mazes from {}'.format(path))
     # visualise sample from final results
-    mazes = pickle.load(open(path, 'rb'))
+    mazes = torch.load(path, map_location='cpu').detach()
     correct = 0
     for maze in mazes:
-        if torch.cuda.is_available(): maze = maze.cpu()
         maze = maze.detach().numpy()
         check = check_maze(maze)
         if check:
@@ -63,10 +55,10 @@ def visualise_training_set(path):
     print(correct, ' correct out of ', len(mazes))
 
 
-def test_results(dir, eg_no):
-    path = os.path.join(dir, 'fake_mazes_{}.pickle'.format(eg_no))
+def test_results(directory, eg_no):
+    path = os.path.join(directory, 'fake_mazes_{}.pickle'.format(eg_no))
     print('Testing results from {}'.format(path))
-    mazes = pickle.load(open(path, 'rb')).detach()
+    mazes = torch.load(path, map_location='cpu').detach()
     # print(mazes)
     r = []
     correct = 0
@@ -90,7 +82,7 @@ def test_all_results_average(directory):
         correct = 0
         total = 0
         for file in chunk:
-            mazes = pickle.load(open(file, 'rb')).detach()
+            mazes = torch.load(file, map_location='cpu').detach()
             total += mazes.size(0)
             for each_maze in mazes:
                 if check_maze(each_maze): correct += 1
@@ -103,7 +95,7 @@ def test_all_results_ind(directory):
     for idx, file in enumerate(files):
         correct = 0
         total = 0
-        mazes = pickle.load(open(file, 'rb')).detach()
+        mazes = torch.load(file, map_location=lambda storage, loc: storage).detach()
         total += mazes.size(0)
         for each_maze in mazes:
             if check_maze(each_maze): correct += 1

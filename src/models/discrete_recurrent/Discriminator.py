@@ -8,6 +8,7 @@ class Discriminator(nn.Module):
     def __init__(self, opts):
         super(Discriminator, self).__init__()
         self.name = opts.name
+        self.writer = opts.writer
 
         self.device = opts.device
         self.maze_size = opts.maze_size

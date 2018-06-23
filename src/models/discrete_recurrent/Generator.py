@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-from helpers.Bunch import Bunch
 from helpers.Checkpoint import Checkpoint
 from helpers import GumbelSoftmaxTrick
 from helpers import HeavisideTrick
@@ -12,6 +11,7 @@ class Generator(nn.Module):
     def __init__(self, opts):
         super(Generator, self).__init__()
         self.name = opts.name
+        self.writer = opts.writer
 
         self.device = opts.device
         self.latent_size = opts.latent_size
@@ -22,9 +22,9 @@ class Generator(nn.Module):
         self.learning_rate = opts.learning_rate
         self.temperature = opts.temp
 
-        self.lstm = nn.LSTM(1, self.hidden_size, bidirectional=True)
-        self.h2o = nn.Linear(self.hidden_size * 2, 1)
-        self.o2tanh = nn.Tanh()
+        self.lstm = nn.LSTM(1, self.hidden_size, bidirectional=True).to(device=self.device, dtype=torch.float32)
+        self.h2o = nn.Linear(self.hidden_size * 2, 1).to(device=self.device, dtype=torch.float32)
+        self.o2tanh = nn.Tanh().to(device=self.device, dtype=torch.float32)
 
         self.hidden_state = self.init_hidden_state()
 
@@ -37,8 +37,8 @@ class Generator(nn.Module):
         # Refer to the Pytorch documentation to see exactly
         # why they have this dimensionality.
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        return (torch.zeros(2, self.batch_size, self.hidden_size),
-                torch.zeros(2, self.batch_size, self.hidden_size))
+        return (torch.zeros(2, self.batch_size, self.hidden_size).to(device=self.device, dtype=torch.float32),
+                torch.zeros(2, self.batch_size, self.hidden_size).to(device=self.device, dtype=torch.float32))
 
     def model(self, input_batch):
         self.hidden_state = self.init_hidden_state()
