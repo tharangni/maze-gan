@@ -1,3 +1,8 @@
+.idea/
+*.png
+*events.out.tfevents.*
+
+# Misc
 etc
 share
 bin
@@ -6,19 +11,17 @@ lib
 pip-selfcheck.json
 pyvenv.cfg
 lib64
-*.ipynb
-temp
-.idea/
-models/
-maze_results/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
+
 # C extensions
 *.so
+
 
 # Distribution / packaging
 .Python
@@ -48,9 +51,11 @@ wheels/
 *.manifest
 *.spec
 
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+
 
 # Unit test / coverage reports
 htmlcov/
@@ -63,56 +68,72 @@ coverage.xml
 *.cover
 .hypothesis/
 
+
 # Translations
 *.mo
 *.pot
+
 
 # Django stuff:
 *.log
 local_settings.py
 
+
 # Flask stuff:
 instance/
 .webassets-cache
 
+
 # Scrapy stuff:
 .scrapy
+
 
 # Sphinx documentation
 docs/_build/
 
+
 # PyBuilder
 target/
+
 
 # Jupyter Notebook
 .ipynb_checkpoints
 
+
 # pyenv
 .python-version
+
 
 # celery beat schedule file
 celerybeat-schedule
 
+
 # SageMath parsed files
 *.sage.py
 
+
 # dotenv
 .env
+
 
 # virtualenv
 .venv
 venv/
 ENV/
 
+
 # Spyder project settings
 .spyderproject
 .spyproject
 
+
 # Rope project settings
 .ropeproject
 
+
 # mkdocs documentation
 /site
+
 
 # mypy
 .mypy_cache/
