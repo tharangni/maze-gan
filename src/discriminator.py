@@ -41,11 +41,10 @@ class Discriminator:
         # Loss starts (x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
 
         reset_grad()
-        test_tensor = torch.tensor([0.75]).to(self.device)
-        m = RelaxedBernoulli(test_tensor, probs=mazes)
-        mazes = m.sample()
+        random_noise = torch.rand(mazes.shape).to(self.device)
         outputs = self.model(mazes)
-        d_loss_real = loss_criterion(outputs, real_labels)
+        noise_outputs = self.model(random_noise)
+        d_loss_real = loss_criterion((outputs+noise_outputs)/2, real_labels)
         d_loss_real.backward()
         real_score = outputs
 
@@ -53,9 +52,7 @@ class Discriminator:
         # Generate fake data first
         z = torch.randn(self.batch_size, input_size).to(self.device)
         fake_mazes = G(z)
-        test_tensor = torch.tensor([0.75]).to(self.device)
-        m = RelaxedBernoulli(test_tensor, probs=fake_mazes)
-        fake_mazes = m.sample()
+
         outputs = self.model(fake_mazes)
         # Fake data loss
         fake_score = outputs

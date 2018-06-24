@@ -37,7 +37,7 @@ class Generator():
         reset_grad()
 
         ## Compute loss with fake mazes
-        # forward pass with the discrete variable 
+        # forward pass with the discrete variable
         # z_discrete = np.random.choice([0, 1], size=(self.batch_size, self.input_size), p=[4./10, 6./10])
         # z_tensor = torch.from_numpy(z_discrete).to(self.device)
         # z_tensor = z_tensor.float()
@@ -45,9 +45,7 @@ class Generator():
         fake_mazes = self.model(z)
 
         # gumbel-softmax?
-        test_tensor = torch.tensor([0.75]).to(self.device)
-        m = RelaxedBernoulli(test_tensor, probs=fake_mazes)
-        fake_mazes = m.sample()
+
         outputs = D(fake_mazes)
 
         g_loss = loss_criterion(outputs, real_labels)

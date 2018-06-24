@@ -18,26 +18,27 @@ def visualise_results(dir, eg_no):
     path = os.path.join(dir, 'fake_mazes-{}.pickle'.format(eg_no))
     print('Visualising sample from {}'.format(path))
     # visualise sample from final results
-    mazes = pickle.load(open(path, 'rb'))
+    mazes = torch.load(open(path, 'rb'))
     # print(mazes)
     # takes sample and plot
-    for maze in mazes[:10]:
-        print(maze)
+
+    for maze in mazes:
         maze[maze < 0.5] = 0
         maze[maze > 0.5] = 1
         # is it a valid maze?
         if torch.cuda.is_available(): maze = maze.cpu()
         maze = maze.detach().numpy()
         check = check_maze(maze)
-        print(check)
-        draw_maze(maze)
+        if (check):
+            print(maze)
+            draw_maze(maze)
     test_results(dir, eg_no)
 
 
 def test_results(dir, eg_no):
     path = os.path.join(dir, 'fake_mazes-{}.pickle'.format(eg_no))
     print('Testing results from {}'.format(path))
-    mazes = pickle.load(open(path, 'rb'))
+    mazes = torch.load(open(path, 'rb'))
     # print(mazes)
     r = np.array([])
     for maze in mazes:
@@ -56,7 +57,7 @@ def get_results(dir, print_flag=True):
     for i in range(length):
         path = os.path.join(dir, 'fake_mazes-{}.pickle'.format(i + 1))
         with codecs.open(path, 'rb') as mazes:
-            mazes = pickle.load(mazes)
+            mazes = torch.load(mazes)
             r = np.array([])
             for maze in mazes:
                 maze[maze < 0.5] = 0
@@ -84,9 +85,12 @@ def all_results(dir):
     all_counts, r = get_results(dir)
     max_count = max(all_counts)
     print(len(all_counts))
-    for i in range(len(all_counts)):
-        if all_counts[i] == max_count:
-            print('Most number of correct fake mazes found at file {} with {}/{}.'.format(i + 1, max_count, len(r)))
+    if max_count > 0:
+        for i in range(len(all_counts)):
+            if all_counts[i] == max_count:
+                print('Most number of correct fake mazes found at file {} with {}/{}.'.format(i + 1, max_count, len(r)))
+    else:
+        print('No correct mazes were found')
 
 
 def visualise_loss(m_dir, r_dir):
@@ -163,7 +167,7 @@ def start():
 
         # train
         gan.train()
-        #writer.export_scalars_to_json("./tensorboard_data.json") # use this istead of pickle??
+        # writer.export_scalars_to_json("./tensorboard_data.json") # use this istead of pickle??
         writer.close()
 
     # save gan

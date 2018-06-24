@@ -14,7 +14,7 @@ def check_maze(maze):
     # single connected-component
 
     labeled_array, num_features = label(maze)
-    
+
     npmaze = np.array(maze)
     mx, my = npmaze.shape
     if num_features > 1:
@@ -83,29 +83,37 @@ def generate_maze(mx, my):
 
     return correct_maze
 
-def demo_generate_maze(mx, my): # width and height of the maze
-    maze = generate_maze(mx, my)
-    if check_maze(maze, mx, my):
-        draw_maze(maze)
+def demo_generate_maze(mx, my, N): # width and height of the maze
+    maze_list = []
+    for i in range(N):
+        maze = generate_maze(mx, my)
+        maze_list.append(maze)
+    return np.array(maze_list)
 
 def draw_maze(maze, close=True, time=1.5):
     plt.figure()
     plt.imshow(maze, cmap='gray')
-    plt.show(block=False)
-    if close:
-        plt.pause(time)
-        plt.close()
+    plt.show()
+    # if close:
+    #     plt.pause(time)
+    #     plt.close()
 
 def gen_maze_data(N, mx, my):
     data = []
     for i in range(N):
         maze = generate_maze(mx, my)
-        if i%100 == 0:
+        if i%1000 == 0:
             print("Generated {}/{} mazes...".format(i, N))
         data.append(maze)
     return np.array(data)
 
  # you can add to the list all the transformations you need.
 
+ # uncomment for checking unique mazes
 # if __name__ == '__main__':
-#     demo_generate_maze(16, 16)
+#     l = [10, 50, 100, 500, 1000]
+#     for i in l:
+#         print("{} mazes generated".format(i))
+#         maze_list = demo_generate_maze(8, 8, i)
+#         a = np.unique(maze_list, axis = 0)
+#         print(len(a))

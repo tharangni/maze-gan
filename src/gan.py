@@ -3,6 +3,7 @@ import pickle
 import torch
 import csv
 import torch.nn as nn
+import numpy as np
 from torchvision import transforms
 from generator import Generator
 from discriminator import Discriminator
@@ -50,7 +51,21 @@ class GAN:
         # generate maze data
         # maze_data = self.transform(gen_maze_data(self.N, self.mx, self.my))
         maze_data = gen_maze_data(self.N, self.mx, self.my)
+        print(len(maze_data))
+        unique_maze = np.unique(maze_data, axis = 0)
+        number_unique = len(unique_maze)
+        print(number_unique,"/" ,self.N)
 
+        while number_unique != self.N:
+            temp_maze = gen_maze_data(self.N - number_unique, self.mx, self.my)
+            temp_unique = np.unique(temp_maze, axis = 0)
+            unique_maze = np.concatenate((unique_maze, temp_unique), axis=0)
+            unique_maze = np.unique(unique_maze, axis = 0)
+            number_unique = len(unique_maze)
+            print(number_unique)
+
+        maze_data = unique_maze
+        print("Training data contains only unique mazes now")
         # Data loader
         data_loader = torch.utils.data.DataLoader(dataset=maze_data,
                                                   batch_size=self.batch_size,
@@ -71,15 +86,17 @@ class GAN:
                 # Real: 0.0 - 0.1
                 # Fake: 0.9 - 1.0
                 # adding 10% noise to training (i.e. add 10% fake labels to real and vice versa)
-                real_labels = 0 + torch.rand([self.batch_size, 1], dtype=torch.float).to(self.device) * (0.1 - 0.0)
-                fake_labels = 0.9 + torch.rand([self.batch_size, 1], dtype=torch.float).to(self.device) * (1.0 - 0.9)
+                # real_labels = 0 + torch.rand([self.batch_size, 1], dtype=torch.float).to(self.device) * (0.1 - 0.0)
+                real_labels = torch.ones([self.batch_size, 1], dtype=torch.float).to(self.device)
+                # fake_labels = 0.9 + torch.rand([self.batch_size, 1], dtype=torch.float).to(self.device) * (1.0 - 0.9)
+                fake_labels = torch.zeros([self.batch_size, 1], dtype=torch.float).to(self.device)
 
                 noise_samples = 20
 
-                if (epoch % noise_samples == 0):
-                    real_labels = 0.9 + torch.randn([self.batch_size, 1], dtype=torch.float).to(self.device) * (
-                            1.0 - 0.9)
-                    fake_labels = 0 + torch.randn([self.batch_size, 1], dtype=torch.float).to(self.device) * (0.1 - 0.0)
+                # if (epoch % noise_samples == 0):
+                #     real_labels = 0.9 + torch.randn([self.batch_size, 1], dtype=torch.float).to(self.device) * (
+                #             1.0 - 0.9)
+                #     fake_labels = 0 + torch.randn([self.batch_size, 1], dtype=torch.float).to(self.device) * (0.1 - 0.0)
 
                 # Train Discrimator
                 d_loss, fake_score, real_score, fake_mazes = self.D.train(self.G.model,
@@ -106,10 +123,10 @@ class GAN:
 
                 if (local_batch + 1) % 100 == 0 or (epoch + 1) % 100 == 0:
                     for name, param in self.G.model.named_parameters():
-                        self.writer.add_histogram("Generator/" + name, param.clone().cpu().data.numpy(), epoch + 1)
+                        self.writer.add_histogram("Generator/" + name, param.clone().cpu().data.numpy(), epoch + 1, bins='auto')
 
                     for name, param in self.D.model.named_parameters():
-                        self.writer.add_histogram("Discriminator/" + name, param.clone().cpu().data.numpy(), epoch + 1)
+                        self.writer.add_histogram("Discriminator/" + name, param.clone().cpu().data.numpy(), epoch + 1, bins='auto')
 
                     print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'
                           .format(epoch + 1, self.num_epochs, local_batch + 1, total_step, d_loss.item(), g_loss.item(),
@@ -118,11 +135,11 @@ class GAN:
             # Save real mazes
             if (epoch + 1) == 1:
                 maze_set = maze_set.reshape(maze_set.size(0), self.mx, self.my)
-                dump_file(os.path.join(self.maze_dir, 'real_mazes.pickle'), maze_set)
+                torch.save(maze_set, os.path.join(self.maze_dir, 'real_mazes.pickle'))
 
             # Save sampled mazes
             fake_mazes = fake_mazes.reshape(fake_mazes.size(0), self.mx, self.my)
-            dump_file(os.path.join(self.maze_dir, 'fake_mazes-{}.pickle'.format(epoch + 1)), fake_mazes)
+            torch.save(fake_mazes, os.path.join(self.maze_dir, 'fake_mazes-{}.pickle'.format(epoch + 1)))
 
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
