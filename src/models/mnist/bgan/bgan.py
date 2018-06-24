@@ -37,7 +37,7 @@ def run(opt):
                 return layers
 
             self.model = nn.Sequential(
-                *block(100, 128, normalize=False),
+                *block(opt.latent_dim, 128, normalize=False),
                 *block(128, 256),
                 *block(256, 512),
                 *block(512, 1024),
@@ -87,20 +87,19 @@ def run(opt):
         discriminator_loss.cuda()
 
     # Create checkpoint handler and load state if required
+    current_epoch = 0
     checkpoint_g = Checkpoint(CWD, generator, optimizer_g)
     checkpoint_d = Checkpoint(CWD, discriminator, optimizer_d)
-
-    current_epoch = 0
-    print()
     if opt.resume:
-        current_epoch_1 = checkpoint_g.load()
-        current_epoch_2 = checkpoint_d.load()
-        if current_epoch_1 != current_epoch_2:
-            raise ValueError('Epochs don`t match. Generator and Discriminator out of sync.')
-        current_epoch = current_epoch_1
+        global NOW
+        global WRITER
+        NOW, current_epoch = checkpoint_g.load()
+        _, _ = checkpoint_d.load()
+        WRITER = SummaryWriter(log_dir=os.path.join(CWD, 'runs', NOW))
+        print('Loaded models from disk. Starting at epoch {}'.format(current_epoch + 1))
 
     # Configure data loader
-    mnist_loader = data_loader.mnist(opt)
+    mnist_loader = data_loader.mnist(opt, False)
 
     for epoch in range(current_epoch, opt.n_epochs):
         for i, imgs in enumerate(mnist_loader):
@@ -157,3 +156,7 @@ def run(opt):
                 if opt.log_details:
                     logger.save_image_grid(CWD, real_imgs, fake_imgs, batches_done)
                     logger.log_tensorboard_parameter_data(WRITER, batches_done, generator, discriminator)
+        # -- Save model checkpoints after each epoch -- #
+        checkpoint_g.save(NOW, epoch)
+        checkpoint_d.save(NOW, epoch)
+    WRITER.close()

@@ -1,5 +1,4 @@
 import argparse
-import os
 import importlib
 
 if __name__ == '__main__':
@@ -26,11 +25,10 @@ if __name__ == '__main__':
                         help='size of each maze dimension (Discriminator input)')
     parser.add_argument('--latent_dim', type=int, default=100,
                         help='The dimension of the latent space (Generator input)')
+    parser.add_argument('--temp', type=float, default=0.2, help='temperature to use for gumbel-softmax quantization')
     opt = parser.parse_args()
 
     print(opt)
-
-    # model_dir = os.path.abspath(os.path.join('models', opt.dataset, opt.model, opt.model + '.py'))
 
     model = importlib.import_module('.'.join(['models', opt.dataset, opt.model, opt.model]))
     model.run(opt)
