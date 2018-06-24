@@ -111,16 +111,20 @@ class GAN:
                 # Real: 0.0 - 0.1
                 # Fake: 0.9 - 1.0
                 # adding 10% noise to training (i.e. add 10% fake labels to real and vice versa)
-                real_labels = 0 + torch.rand([self.batch_size, 1], dtype=torch.float).to(self.device) * (0.1 - 0.0)
-                fake_labels = 0.9 + torch.rand([self.batch_size, 1], dtype=torch.float).to(self.device) * (1.0 - 0.9)
+
+
+                real_labels = torch.ones(self.batch_size, 1)
+                fake_labels = torch.zeros(self.batch_size, 1)
+                #real_labels = 0 + torch.rand([self.batch_size, 1], dtype=torch.float).to(self.device) * (0.1 - 0.0)
+                #fake_labels = 0.9 + torch.rand([self.batch_size, 1], dtype=torch.float).to(self.device) * (1.0 - 0.9)
 
                 noise_samples = 20
 
-                if (epoch % noise_samples == 0):
+                """if (epoch % noise_samples == 0):
                     real_labels = 0.9 + torch.randn([self.batch_size, 1], dtype=torch.float).to(self.device) * (
                             1.0 - 0.9)
                     fake_labels = 0 + torch.randn([self.batch_size, 1], dtype=torch.float).to(self.device) * (0.1 - 0.0)
-
+                """
                 # Train Discrimator
                 d_loss, fake_score, real_score, fake_mazes = self.D.train(self.G.model,
                                                                           self.G.input_size,
@@ -251,7 +255,7 @@ class ImageFilelist(data.Dataset):
         #    target = self.target_transform(target)
         #print("im shape ", img.shape)
 
-        return img + torch.autograd.Variable(torch.randn(img.size()) * 0.5)
+        return img #+ torch.autograd.Variable(torch.randn(img.size()) * 0.5)
 
     def __len__(self):
         return len(self.imlist)

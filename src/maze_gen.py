@@ -104,7 +104,7 @@ def draw_maze(maze, close=True, time=1.5, save_to_file=False, num="NA", dir="NA"
         plt.savefig(name, dpi=80)#, bbox_inches="tight", pad_inches=0)
         #print("img_data ",img_data.get_array().shape)
         #plt.imsave(name, img_data.get_array(), dpi=80)#, cmap='gray')
-        #plt.close()
+        plt.close()
         #fg.ghg
     else:
         if close:

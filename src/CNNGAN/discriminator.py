@@ -24,7 +24,7 @@ class Discriminator(nn.Module):
         #self.model.classifier = nn.Sequential(*modules)
         #print("D ", self.model)
 
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.00002)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0000001)
         self.writer = writer
         #input = (torch.rand([batch_size - 1, maze_size]))
         #writer.add_graph(model=self.model, input_to_model=(input,), verbose=True)
@@ -51,10 +51,11 @@ class Discriminator(nn.Module):
         #print("D inputs ", mazes.size())
         outputs = self.model(mazes)
         #print("D ouptuts ", outputs.size())
+        #print("Before", outputs.mean().item())
         d_loss_real = loss_criterion(outputs, real_labels)
         d_loss_real.backward()
         real_score = outputs
-
+        #print("After ", real_score.mean().item())
         ##Fake Data BCE_Loss
         # Generate fake data first
         z = torch.randn((self.batch_size, 100)).view(-1, 100, 1, 1)
