@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
 import torch
 
@@ -20,26 +20,33 @@ class Checkpoint:
         self.optimizer = optimizer
         self.path = os.path.join(checkpoint_dir, '{}.checkpoint.pth.tar'.format(type(model).__name__.lower()))
 
-    def save(self, state: Dict[str, Any]) -> None:
-        """Persist the current state of the model and optimizer to disk.
+    def save(self, run: str, epoch: int) -> None:
+        """Persist the current state of the model and optimizer to disk. Stores:
+            * Model parameters.
+            * Optimizer parameters.
+            * Starting epoch.
 
         Args:
-            state: A dictionary of the current state, including:
-                * The current epoch.
-                * The model parameters.
-                * The optimizer parameters.
+            run: The id of the current run. Typically a datetime.
+            epoch: The current epoch.
         """
+        state = {
+            'run': run,
+            'epoch': epoch + 1,
+            'model': self.model.state_dict(),
+            'optimizer': self.optimizer.state_dict()
+        }
         torch.save(state, self.path)
 
-    def load(self) -> int:
+    def load(self) -> Tuple[str, int]:
         """loads the previously saved states into the model and optimizer and returns the last epoch trained.
 
         Returns:
             The last epoch trained.
         """
         checkpoint = torch.load(self.path)
-        start_epoch = checkpoint['epoch']
+
         self.model.load_state_dict(checkpoint['model'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
 
-        return start_epoch
+        return checkpoint['run'], checkpoint['epoch']
