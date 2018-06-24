@@ -25,18 +25,19 @@ def log_batch_statistics(epoch: int, epochs: int, batch: int, batches: int,
            real_scores.detach().mean().item(), fake_scores.detach().mean().item()))
 
 
-def save_image_grid(module_path, real_imgs, fake_imgs, step) -> None:
+def save_image_grid(module_path, run_id, real_imgs, fake_imgs, step) -> None:
     """Save a  5 x 5 grid of images, real and generated. Does not do any upscaling on the images,
     so small mazes of e.g. 8 x 8 will not show well. Accepts batches of images using
     PyTorch batch representation batch_size x 1 x *image_dimensions
 
     Args:
         module_path: The path to the module that is currently being executed.
+        run_id: An id of the current run. Should match the Tensorboard run id. Usually a datetime.
         real_imgs: The training images. A Tensor of size batch_size x 1 x ...
         fake_imgs: The generated images. A Tensor of size batch_size x 1 x ...
         step: The current global step.
     """
-    path = os.path.join(module_path, 'images')
+    path = os.path.join(module_path, 'images', run_id)
     os.makedirs(path, exist_ok=True)
     save_image(real_imgs.data[:25], os.path.join(path, 'real_%d.png') % step, nrow=5, normalize=True)
     save_image(fake_imgs.data[:25], os.path.join(path, 'fake_%d.png') % step, nrow=5, normalize=True)
@@ -76,12 +77,14 @@ def log_tensorboard_parameter_data(writer: SummaryWriter, step: int,
         name = name.replace('.', '/')
         writer.add_histogram("Generator/" + name, param.detach().data.cpu().numpy(),
                              step, bins='auto')
-        writer.add_histogram("Generator/" + name + '/grad', param.grad.detach().data.cpu().numpy(),
-                             step, bins='auto')
+        # DISABLED BECAUSE UNSTABLE
+        # writer.add_histogram("Generator/" + name + '/grad', param.grad.detach().data.cpu().numpy(),
+        #                      step, bins='auto')
 
     for name, param in discriminator.named_parameters():
         name = name.replace('.', '/')
         writer.add_histogram("Discriminator/" + name, param.detach().data.cpu().numpy(),
                              step, bins='auto')
-        writer.add_histogram("Discriminator/" + name + '/grad', param.grad.detach().data.cpu().numpy(),
-                             step, bins='auto')
+        # DISABLED BECAUSE UNSTABLE
+        # writer.add_histogram("Discriminator/" + name + '/grad', param.grad.detach().data.cpu().numpy(),
+        #                      step, bins='auto')
