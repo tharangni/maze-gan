@@ -15,12 +15,10 @@ model_choices = ['VGAN', 'DCGAN', 'BGAN', 'CNNGAN']
 
 
 def visualise_results(dir, eg_no):
-    # path = os.path.join(dir, 'real_mazes.pickle')
     path = os.path.join(dir, 'fake_mazes-{}.pickle'.format(eg_no))
     print('Visualising sample from {}'.format(path))
     # visualise sample from final results
     mazes = pickle.load(open(path, 'rb'))
-    # print(mazes)
     # takes sample and plot
     for maze in mazes[:10]:
         print(maze)
@@ -39,7 +37,6 @@ def test_results(dir, eg_no):
     path = os.path.join(dir, 'fake_mazes-{}.pickle'.format(eg_no))
     print('Testing results from {}'.format(path))
     mazes = pickle.load(open(path, 'rb'))
-    # print(mazes)
     r = np.array([])
     for maze in mazes:
         maze[maze < 0.5] = 0
@@ -129,17 +126,18 @@ def start():
     # ------ Have to check which are rows and columns -------#
     parser.add_argument('--mx', help='No. columns in maze', type=int, default=2)
     parser.add_argument('--my', help='No. rows in maze', type=int, default=2)
-    parser.add_argument('--N', help='No. of traning examples to generate', type=int, default=600)
+    parser.add_argument('--N', help='No. of traning examples to generate', type=int, default=1000)
     # -------------------------------------------------------#
     parser.add_argument('--input_size', help='No. inputs for generator', type=int, default=10)
     parser.add_argument('--hidden_size', help='No. of hidden neurons', type=int, default=8)
     parser.add_argument('--num_epochs', help='No. of epochs', type=int,
                         default=200)  # i.e. number of fake mazes to generate
-    parser.add_argument('--batch_size', help='Size of batch to use (Must be compatible with N)', type=int, default=50)
+    parser.add_argument('--batch_size', help='Size of batch to use (Must be compatible with N)', type=int, default=100)
     parser.add_argument('--maze_dir', help='Directory results are stored in', type=str, default=maze_dir)
     parser.add_argument('--model', help='Choose a model to use', choices=model_choices, type=str,
                         default=model_choices[3])
-    parser.add_argument('--td', '--training_directory', help='Training directory, only applicaple for CNN', default=training_dir, type=str)
+    parser.add_argument('--td', '--training_directory', help='Training directory, only applicaple for CNN',
+                        default=training_dir, type=str)
     # parser.add_argument('--gen_images', help='Generate images for training data', type=int, default=200)
     # TODO check batch size is appropoate for the N given
 
@@ -161,16 +159,14 @@ def start():
         else:
             print('Using Cpu :(')
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        #print(device)
         if not os.path.exists(args.maze_dir):
             os.makedirs(args.maze_dir)
 
-        #_GAN = __import__(args.model+".gan", globals(), locals(),  ['GAN'])
-        module = __import__(args.model+".gan", fromlist=["GAN"])
+        module = __import__(args.model + ".gan", fromlist=["GAN"])
         _GAN = getattr(module, "GAN")
         # check model
         gan = _GAN(device,
-                  args)
+                   args)
 
         # train
         gan.train()
