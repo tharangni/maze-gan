@@ -10,18 +10,26 @@ CUDA = True if torch.cuda.is_available() else False
 TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
 
 
-def mnist(opt: Namespace)-> torch.Tensor:
+def mnist(opt: Namespace, binary: bool) -> torch.Tensor:
     os.makedirs(os.path.join(ROOT, 'data', 'mnist'), exist_ok=True)
+    if binary:
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: torch.round(x))
+        ])
+    else:
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+
     data = datasets.MNIST(os.path.join(ROOT, 'data', 'mnist'), train=True, download=True,
-                          transform=transforms.Compose([
-                              transforms.ToTensor(),
-                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                          ]))
+                          transform=transform)
     mnist_loader = torch.zeros_like(data.train_data).type(TENSOR)
     for idx in range(len(data)):
         mnist_loader[idx], _ = data[idx]
 
-    return mnist_loader.reshape(-1, opt.batch_size, 1, opt.img_size, opt.img_size)
+    return mnist_loader.reshape(-1, opt.batch_size, 1, opt.img_size, opt.img_size).type(TENSOR)
 
 
 def mazes(opt: Namespace) -> torch.Tensor:
