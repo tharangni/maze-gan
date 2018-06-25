@@ -137,3 +137,4 @@ ENV/
 
 # mypy
 .mypy_cache/
+**.sample.tar

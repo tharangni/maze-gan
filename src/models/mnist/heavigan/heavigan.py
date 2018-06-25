@@ -1,24 +1,28 @@
 from helpers.checkpoint import Checkpoint
-from tensorboardX import SummaryWriter
 from torch.autograd import Variable
-from helpers import data_loader
+from helpers.logger import Logger
 from helpers import st_heaviside
+from helpers import data_loader
 from datetime import datetime
-from helpers import logger
 import torch.nn as nn
 import numpy as np
 import torch
 import os
 
-CWD = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(os.getcwd(), '..'))
+CWD = os.path.dirname(os.path.abspath(__file__))
+RUN = datetime.today().strftime('%Y-%m-%d/%H-%M-%S')
+
 CUDA = True if torch.cuda.is_available() else False
-NOW = datetime.today().strftime('%Y-%m-%d/%H-%M-%S')
-WRITER = SummaryWriter(log_dir=os.path.join(CWD, 'runs', NOW))
 TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
+
+LOGGER = None
 
 
 def run(opt):
+    global LOGGER
+    global RUN
+
     img_shape = (1, opt.img_size, opt.img_size)
 
     # noinspection PyMethodMayBeStatic
@@ -86,12 +90,12 @@ def run(opt):
     checkpoint_g = Checkpoint(CWD, generator, optimizer_g)
     checkpoint_d = Checkpoint(CWD, discriminator, optimizer_d)
     if opt.resume:
-        global NOW
-        global WRITER
-        NOW, current_epoch = checkpoint_g.load()
+        RUN, current_epoch = checkpoint_g.load()
         _, _ = checkpoint_d.load()
-        WRITER = SummaryWriter(log_dir=os.path.join(CWD, 'runs', NOW))
-        print('Loaded models from disk. Starting at epoch {}'.format(current_epoch + 1))
+        LOGGER = Logger(CWD, RUN)
+        print('Loaded models from disk. Starting at epoch {}.'.format(current_epoch + 1))
+    else:
+        LOGGER = Logger(CWD, RUN)
 
     # Configure data loader
     mnist_loader = data_loader.mnist(opt, True)
@@ -116,10 +120,10 @@ def run(opt):
             z = Variable(torch.randn(imgs.shape[0], opt.latent_dim).type(TENSOR))
 
             # Generate a batch of images
-            gen_imgs = generator(z)
+            fake_images = generator(z)
 
             # Loss measures generator's ability to fool the discriminator
-            g_loss = adversarial_loss(discriminator(gen_imgs), valid)
+            g_loss = adversarial_loss(discriminator(fake_images), valid)
 
             g_loss.backward()
             optimizer_g.step()
@@ -133,25 +137,26 @@ def run(opt):
             # Measure discriminator's ability to classify real from generated samples
             real_scores = discriminator(real_imgs)
             real_loss = adversarial_loss(real_scores, valid)
-            fake_scores = discriminator(gen_imgs.detach())
+            fake_scores = discriminator(fake_images.detach())
             fake_loss = adversarial_loss(fake_scores, fake)
             d_loss = (real_loss + fake_loss) / 2
 
             d_loss.backward()
             optimizer_d.step()
 
-            batches_done = epoch * len(mnist_loader) + i
+            batches_done = epoch * len(mnist_loader) + i + 1
             if batches_done % opt.sample_interval == 0:
-                logger.log_batch_statistics(epoch, opt.n_epochs, i, len(mnist_loader),
-                                            d_loss, g_loss, real_scores, fake_scores)
+                LOGGER.log_generated_sample(fake_images, batches_done)
 
-                logger.log_tensorboard_basic_data(WRITER, batches_done, g_loss, d_loss,
-                                                  real_scores, fake_scores)
+                LOGGER.log_batch_statistics(epoch, opt.n_epochs, i + 1, len(mnist_loader), d_loss, g_loss, real_scores,
+                                            fake_scores)
+
+                LOGGER.log_tensorboard_basic_data(g_loss, d_loss, real_scores, fake_scores, batches_done)
 
                 if opt.log_details:
-                    logger.save_image_grid(CWD, NOW, real_imgs, gen_imgs, batches_done)
-                    logger.log_tensorboard_parameter_data(WRITER, batches_done, generator, discriminator)
+                    LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
+                    LOGGER.log_tensorboard_parameter_data(discriminator, generator, batches_done)
         # -- Save model checkpoints after each epoch -- #
-        checkpoint_g.save(NOW, epoch)
-        checkpoint_d.save(NOW, epoch)
-    WRITER.close()
+        checkpoint_g.save(RUN, epoch)
+        checkpoint_d.save(RUN, epoch)
+    LOGGER.writer.close()
