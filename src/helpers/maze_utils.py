@@ -139,7 +139,7 @@ def check_maze(maze: np.ndarray) -> bool:
     return True
 
 
-def save_maze_grid(mazes: np.ndarray, path: str) -> None:
+def save_grid(mazes: np.ndarray, path: str) -> None:
     """Save a sample of the first 25 mazes in the minibatch as a 5x5 grid of images. Used for visual inspection
     of the results.
 
@@ -161,6 +161,14 @@ def save_maze_grid(mazes: np.ndarray, path: str) -> None:
     plt.savefig(path, dpi=160, bbox_inches='tight')
 
 
+def draw(maze: np.ndarray) -> None:
+    plt.imshow(maze, cmap='gray')
+    plt.axis('image')
+    plt.show(block=False)
+    plt.pause(0.5)
+    plt.close()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--action', type=str, default='generate', help='possible actions: generate, draw')
@@ -174,6 +182,6 @@ if __name__ == '__main__':
     elif opts.action == 'draw':
         data = torch.load('../../data/mazes/{}.{}x{}.mazes'.format(opts.number, opts.size, opts.size))
         os.makedirs(opts.path, exist_ok=True)
-        save_maze_grid(mazes=data, path='/'.join([opts.path, 'first_sample']))
+        save_grid(mazes=data, path='/'.join([opts.path, 'first_sample']))
     else:
         raise NotImplementedError('Unknown action: {}'.format(opts.action))
