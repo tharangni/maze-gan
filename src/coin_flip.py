@@ -22,7 +22,7 @@ if __name__ == '__main__':
     iter_list = [100, 1000, 10000, 100000]
     pbt_choice = np.arange(0.1, 1.0, 0.1)
     for each_item in iter_list:
-        print("\nGenerating mazes {} times :".format(each_item))
+        print("\nGenerating experiment {} times :".format(each_item))
         for q in pbt_choice:
             print("0/1 probability = {}, {} respectively".format(q, 1-q))
             for i in range(4, 6):
