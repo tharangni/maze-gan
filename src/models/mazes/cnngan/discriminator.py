@@ -1,74 +1,7 @@
-import torch
 import torch.nn as nn
-from torchvision import models
-from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
 import torch.nn.functional as F
 
-
 class Discriminator(nn.Module):
-    def __init__(self,
-                 device,
-                 hidden_size,
-                 maze_size,
-                 num_epochs,
-                 batch_size,
-                 writer):
-        super(Discriminator, self).__init__()
-        self.device = device
-        self.hidden_size = hidden_size
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
-        self.model = D(batch_size)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.002)#last 0.004 # 0.0001
-        self.writer = writer
-        self.model = self.model.to(self.device)
-
-    def train(self,
-              G,
-              input_size,
-              mazes,
-              loss_criterion,
-              real_labels,
-              fake_labels,
-              reset_grad,
-              previous_d_G_z,
-              previous_d_z,
-              threshold,
-              threshold2,
-              poch_range ):
-        # Loss starts (x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
-
-        reset_grad()
-        outputs = self.model(mazes)
-
-        if poch_range or previous_d_G_z > threshold and previous_d_z < threshold2:
-            d_loss_real = loss_criterion(outputs, real_labels)
-            d_loss_real.backward()
-        else:
-            d_loss_real = 1
-
-        real_score = outputs
-
-        ##Fake Data BCE_Loss
-        # Generate fake data first
-        z = torch.randn((self.batch_size, 100)).view(-1, 100, 1, 1)
-        fake_mazes = G(z)
-        outputs = self.model(fake_mazes)
-
-        # Fake data loss
-        fake_score = outputs
-        if poch_range or (previous_d_G_z > threshold and previous_d_G_z < threshold2):
-            d_loss_fake = loss_criterion(outputs, fake_labels)
-            d_loss_fake.backward()
-        else:
-            d_loss_fake = 1
-
-        self.optimizer.step()
-
-        return d_loss_fake + d_loss_real, fake_score, real_score, fake_mazes
-
-
-class D(nn.Module):
     # initializers
     def __init__(self, d=128):
         super(D, self).__init__()

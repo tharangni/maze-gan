@@ -1,56 +1,7 @@
-import torch
-import numpy as np
 import torch.nn as nn
-from torchvision import models
-from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
 import torch.nn.functional as F
 
-
-class Generator():
-
-    def __init__(self,
-                 device,
-                 input_size,
-                 hidden_size,
-                 maze_size,
-                 num_epochs,
-                 batch_size,
-                 writer,
-                 output_dim):
-        self.device = device
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.maze_size = maze_size
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
-        self.model = G(batch_size, input_size)
-        self.model = self.model.to(self.device)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.002)
-        self.writer = writer
-
-    def train(self, D, loss_criterion, real_labels, reset_grad):
-        reset_grad()
-
-        ## Compute loss with fake mazes
-        z = torch.randn((self.batch_size, 100)).view(-1, 100, 1, 1)
-        fake_mazes = self.model(z)
-        outputs = D(fake_mazes)
-
-        g_loss = loss_criterion(outputs, real_labels)
-
-        g_loss.backward()
-
-        self.optimizer.step()
-        # maximize log(D(G(z))
-        return g_loss
-
-    def backprop(self, g_loss, reset_grad):
-        reset_grad()
-        g_loss.backward()
-        self.optimizer.step()
-
-
-class G(nn.Module):
+class Generator(nn.Module):
     # initializers
     def __init__(self, d=128, input_size=10):
         super(G, self).__init__()
