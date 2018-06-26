@@ -1,6 +1,8 @@
 .idea/
 *.png
 *events.out.tfevents.*
+**.sample.tar
+*.pth.tar
 
 # Misc
 etc
@@ -137,4 +139,3 @@ ENV/
 
 # mypy
 .mypy_cache/
-**.sample.tar
