@@ -4,7 +4,7 @@ import torch.nn.functional as F
 class Generator(nn.Module):
     # initializers
     def __init__(self, d=128, input_size=10):
-        super(G, self).__init__()
+        super(Generator, self).__init__()
         self.deconv1 = nn.ConvTranspose2d(100, d * 8, 4, 1, 0)# k=4
         self.deconv1_bn = nn.BatchNorm2d(d * 8)
         self.deconv2 = nn.ConvTranspose2d(d * 8, d * 4, 4, 2, 1)
@@ -22,19 +22,11 @@ class Generator(nn.Module):
 
     # forward method
     def forward(self, input):
-        #print("---------")
-        #print("input ", input.shape)
         x = F.relu(self.deconv1_bn(self.deconv1(input)))
-        #print(" ", x.shape)
         x = F.relu(self.deconv2_bn(self.deconv2(x)))
-        #print("last de ", x.shape)
         x = F.relu(self.deconv3_bn(self.deconv3(x)))
-        #print(" ", x.shape)
         x = F.relu(self.deconv4_bn(self.deconv4(x)))
-        #print("last de ", x.shape)
         x = F.sigmoid(self.deconv5(x))
-        #print("last de ", x.shape)
-        #f.h
         return x
 
 

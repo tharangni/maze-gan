@@ -1,18 +1,10 @@
 import os
-import cv2
 import torch
-import torch.nn as nn
 import numpy as np
-import torch.utils.data as data
-import torchvision
-from torchvision import transforms, datasets
-from tensorboardX import SummaryWriter
-from PIL import Image
-from torchvision import datasets
-from . import generator
-from . import discriminator
-from helpers.checkpoint import Checkpoint
 from torch.autograd import Variable
+from .generator import Generator
+from .discriminator import Discriminator
+from helpers.checkpoint import Checkpoint
 from helpers.logger import Logger
 from helpers import data_loader
 from datetime import datetime
@@ -37,8 +29,8 @@ def run(opt):
     global LOGGER
     global RUN
 
-    generator = Generator()
-    discriminator = Discriminator()
+    generator = Generator(opt.batch_size)
+    discriminator = Discriminator(opt.batch_size)
     adversarial_loss = torch.nn.BCELoss()
 
     # Initialize optimizers for generator and discriminator
@@ -88,7 +80,8 @@ def run(opt):
             optimizer_g.zero_grad()
 
             # Sample noise as generator input
-            z = Variable(TENSOR(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
+            z = Variable(TENSOR(torch.randn((opt.batch_size, 100)).view(-1, 100, 1, 1)))
+            #z = Variable(TENSOR(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
 
             # Generate a batch of images
             fake_images = generator(z)

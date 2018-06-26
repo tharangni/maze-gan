@@ -4,7 +4,7 @@ import torch.nn.functional as F
 class Discriminator(nn.Module):
     # initializers
     def __init__(self, d=128):
-        super(D, self).__init__()
+        super(Discriminator, self).__init__()
         self.conv1 = nn.Conv2d(1, d, 4, 2, 1)
         self.conv2 = nn.Conv2d(d, d * 2, 4, 2, 1)
         self.conv2_bn = nn.BatchNorm2d(d * 2)
@@ -23,23 +23,13 @@ class Discriminator(nn.Module):
 
     # forward method
     def forward(self, input):
-        #print("!!!")
-        #print(input.shape)
         x = F.leaky_relu(self.conv1(input), 0.2)
-        #print(x.shape)
         x = F.leaky_relu(self.conv2_bn(self.conv2(x)), 0.2)
-        #print(x.shape)
         x = F.leaky_relu(self.conv3_bn(self.conv3(x)), 0.2)
-        #print(x.shape)
         x = F.leaky_relu(self.conv4_bn(self.conv4(x)), 0.2)
-        # x = F.max_pool2d(x,kernel_size=3, stride=2)
-        #print("cov4  ", x.shape)
         x = F.leaky_relu(self.conv5(x))
-        #print(x.shape)
         x = x.view(x.size(0), self.d)  # make this dynamic
-        #print(x.shape)
         x = F.sigmoid(self.fc(x))
-        #print("last ", x.shape)
         return x
 
 
