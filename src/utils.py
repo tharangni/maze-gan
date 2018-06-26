@@ -28,7 +28,7 @@ def initialize_weights(net):
 
 
 # Visualising image in batch
-def visualise_image_pickle(name):
+def visualise_image_pickle(name, round=False):
     print("Visualise arguments ", name)
     ax = plt.axes([0, 0, 1, 1], frameon=False)
     ax.get_xaxis().set_visible(False)
@@ -36,6 +36,10 @@ def visualise_image_pickle(name):
     plt.autoscale(tight=True)
     mazes = pickle.load(open(name, 'rb'))
     for maze in mazes[:10]:
+
+        if round:
+            maze[maze < 0.5] = 0
+            maze[maze > 0.5] = 1
         # is it a valid maze?
         if torch.cuda.is_available():
             maze = maze.cpu()

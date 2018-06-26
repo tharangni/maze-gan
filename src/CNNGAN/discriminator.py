@@ -19,7 +19,7 @@ class Discriminator(nn.Module):
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.model = D(batch_size)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.00004)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.00007)#last 0.004 # 0.0001
         self.writer = writer
         self.model = self.model.to(self.device)
 
@@ -32,13 +32,16 @@ class Discriminator(nn.Module):
               fake_labels,
               reset_grad,
               previous_d_G_z,
-              threshold):
+              previous_d_z,
+              threshold,
+              threshold2,
+              poch_range ):
         # Loss starts (x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
 
         reset_grad()
         outputs = self.model(mazes)
 
-        if previous_d_G_z > threshold:
+        if poch_range or previous_d_G_z > threshold and previous_d_z < threshold2:
             d_loss_real = loss_criterion(outputs, real_labels)
             d_loss_real.backward()
         else:
@@ -54,7 +57,7 @@ class Discriminator(nn.Module):
 
         # Fake data loss
         fake_score = outputs
-        if previous_d_G_z > threshold:
+        if poch_range or (previous_d_G_z > threshold and previous_d_G_z < threshold2):
             d_loss_fake = loss_criterion(outputs, fake_labels)
             d_loss_fake.backward()
         else:
@@ -76,7 +79,7 @@ class D(nn.Module):
         self.conv3_bn = nn.BatchNorm2d(d * 4)
         self.conv4 = nn.Conv2d(d * 4, d * 8, 4, 2, 1)
         self.conv4_bn = nn.BatchNorm2d(d * 8)
-        self.conv5 = nn.Conv2d(d * 8, d, 4, 1, 0)
+        self.conv5 = nn.Conv2d(d * 8, d, 1, 1, 0)#k=4
         self.fc = nn.Linear(d, 1)
         self.d = d
 
@@ -87,14 +90,23 @@ class D(nn.Module):
 
     # forward method
     def forward(self, input):
+        #print("!!!")
+        #print(input.shape)
         x = F.leaky_relu(self.conv1(input), 0.2)
+        #print(x.shape)
         x = F.leaky_relu(self.conv2_bn(self.conv2(x)), 0.2)
+        #print(x.shape)
         x = F.leaky_relu(self.conv3_bn(self.conv3(x)), 0.2)
+        #print(x.shape)
         x = F.leaky_relu(self.conv4_bn(self.conv4(x)), 0.2)
         # x = F.max_pool2d(x,kernel_size=3, stride=2)
+        #print("cov4  ", x.shape)
         x = F.leaky_relu(self.conv5(x))
+        #print(x.shape)
         x = x.view(x.size(0), self.d)  # make this dynamic
+        #print(x.shape)
         x = F.sigmoid(self.fc(x))
+        #print("last ", x.shape)
         return x
 
 

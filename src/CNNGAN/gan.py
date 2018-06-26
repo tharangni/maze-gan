@@ -2,11 +2,13 @@ import os
 import cv2
 import torch
 import torch.nn as nn
+import numpy as np
 import torch.utils.data as data
 import torchvision
 from torchvision import transforms, datasets
 from tensorboardX import SummaryWriter
 from PIL import Image
+from torchvision import datasets
 from CNNGAN.generator import Generator
 from CNNGAN.discriminator import Discriminator
 from maze_gen import gen_maze_data
@@ -30,7 +32,8 @@ class GAN:
         self.mx = args.mx
         self.my = args.my
         self.N = args.N
-        # self.set_up_data()
+        self.img_size = 28
+        #self.set_up_data()
         # self.data_loader = self.load_data()
         self.G = Generator(self.device, args.input_size, args.hidden_size, args.mx * args.my, args.num_epochs,
                            args.batch_size, self.writer,
@@ -56,8 +59,8 @@ class GAN:
     def train(self):
 
         data_loader = self.load_data()
-        self.G.model.weight_init(mean=0.1, std=0.2)
-        self.D.model.weight_init(mean=0.1, std=0.2)
+        self.G.model.weight_init(mean=0, std=0.5)
+        self.D.model.weight_init(mean=0, std=0.5)
 
         # Creates a criterion that measures the Binary Cross Entropy between the target and the output
         loss_criterion = nn.BCELoss()
@@ -68,10 +71,15 @@ class GAN:
         # epochs_file.writerow(['epoch_no', 'batch_no', 'd_loss', 'g_loss', 'D(x)', 'D(G(X))'])
 
         previous_d_G_z = 1000000000000000000
-        threshold = 0.35  # hyperparmeter
+        previous_d_z = -1000000000000000000
+        threshold = 0.3  # hyperparmeter # old treshold
+        threshold2 = 0.7
+        epoch_range = 0
 
         for epoch in range(self.num_epochs):
             for local_batch, maze_set in enumerate(data_loader):
+                maze_set = torch.from_numpy(np.array(maze_set))
+                #print("maze set ", maze_set.shape)
                 real_labels = torch.ones(self.batch_size, 1)
                 fake_labels = torch.zeros(self.batch_size, 1)
 
@@ -84,7 +92,10 @@ class GAN:
                                                                           fake_labels,
                                                                           self.reset_grad,
                                                                           previous_d_G_z,
-                                                                          threshold)
+                                                                          previous_d_z,
+                                                                          threshold,
+                                                                          threshold2,
+                                                                          epoch_range > epoch)
 
                 # Train Generator
                 g_loss = self.G.train(self.D.model, loss_criterion, real_labels, self.reset_grad)
@@ -109,7 +120,7 @@ class GAN:
                         self.writer.add_histogram("CNNGAN/Discriminator/" + name, param.clone().cpu().data.numpy(),
                                                   epoch + 1)
 
-                if previous_d_G_z > threshold:
+                if (previous_d_G_z > threshold and previous_d_z < threshold2) or epoch_range > epoch:
                     print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'
                           .format(epoch + 1, self.num_epochs, local_batch + 1, total_step, d_loss.item(), g_loss.item(),
                                   real_score.mean().item(), fake_score.mean().item()))
@@ -118,9 +129,10 @@ class GAN:
                         'Epoch [{}/{}], Step [{}/{}], Stalled d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'
                             .format(epoch + 1, self.num_epochs, local_batch + 1, total_step, d_loss, g_loss.item(),
                                     real_score.mean().item(), fake_score.mean().item()))
-                previous_d_G_z = fake_score.mean().item()
+                #previous_d_G_z = fake_score.mean().item()
+                #previous_d_z =  real_score.mean().item()
 
-            # Save real mazes
+                # Save real mazes
             if (epoch + 1) == 1:
                 maze_set = maze_set.reshape(self.batch_size, 64, 64)
                 dump_file(os.path.join(self.maze_dir, 'real_mazes.pickle'), maze_set)
@@ -142,22 +154,37 @@ class GAN:
         gen_maze_data(self.N, self.mx, self.my, save_to_file=True, dir=self.training_dir, randomise=True)
 
     def load_data(self):
-        img_size = 64
         transform = transforms.Compose([
-            transforms.Scale(img_size),
+            transforms.Scale(self.img_size),
             transforms.ToTensor(),
             transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
         ])
 
+        data = datasets.MNIST("data", train=True, download=True,
+                              transform=transform)
+        mnist_loader = torch.zeros_like(data.train_data).type(torch.FloatTensor)
+        for idx in range(len(data)):
+            mnist_loader[idx], _ = data[idx]
+
+        return mnist_loader.reshape(-1, self.batch_size, 1, self.img_size, self.img_size).type(torch.FloatTensor)
+
         train_loader = torch.utils.data.DataLoader(
-            ImageFilelist(
-                root=self.training_dir,
-                flist=os.listdir(self.training_dir),
-                transform=transform),
+            datasets.MNIST('../data', train=True, download=True,
+                           transform=transform,),
             batch_size=self.batch_size,
             shuffle=True,
-            num_workers=4,
-            pin_memory=True)
+            num_workers=4
+        )
+
+        # train_loader = torch.utils.data.DataLoader(
+        #     ImageFilelist(
+        #         root=self.training_dir,
+        #         flist=os.listdir(self.training_dir),
+        #         transform=transform),
+        #     batch_size=self.batch_size,
+        #     shuffle=True,
+        #     num_workers=4,
+        #     pin_memory=True)
         return train_loader
 
 
