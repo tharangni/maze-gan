@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from tensorboardX import SummaryWriter
 from maze_gen import check_maze, draw_maze
 from gan import GAN
-from scipy.interpolate import spline
+from scipy.interpolate import interp1d
 
 
 def_dir = 'maze_results'
@@ -115,23 +115,31 @@ def visualise_loss(m_dir, r_dir):
     epoch_file = pd.read_csv(os.path.join(m_dir, 'epoch.csv'))
     fig = plt.figure(figsize=(20, 10))
 
-    # plt.subplot(1, 2, 1)
+    length = len(os.listdir(r_dir))
+    len_b = length*400
+    arr = np.arange(0, len_b, 400)
 
-    plt.plot(epoch_file['epoch_no'], epoch_file['d_loss'], color='g', label="d_loss", lw = 0.5)
-    plt.plot(epoch_file['epoch_no'], epoch_file['g_loss'], color='orange', label="g_loss", lw = 0.5)
-    plt.plot(epoch_file['epoch_no'], epoch_file['D(x)'], color='r', label="D(X)", lw = 0.5)
-    plt.plot(epoch_file['epoch_no'], epoch_file['D(G(X))'], color='b', label="D(G(X))", lw = 0.5)
+    # plt.subplot(1, 2, 1)
+    plt.plot(epoch_file['epoch_no'], epoch_file['d_loss'], color='g', label="d_loss")
+    plt.plot(epoch_file['epoch_no'], epoch_file['g_loss'], color='orange', label="g_loss")
+    plt.plot(epoch_file['epoch_no'], epoch_file['D(x)'], color='r', label="D(X)")
+    plt.plot(epoch_file['epoch_no'], epoch_file['D(G(X))'], color='b', label="D(G(X))")
+    plt.tight_layout()
     plt.xlabel('Epochs')
     plt.ylabel('Score')
     plt.title('GAN Loss')
     plt.legend()
+    plt.show()
+    plt.savefig("vgan_gsoftmax_loss.eps", dpi = 300, format="eps")
 
     # plt.subplot(1, 2, 2)
-    # maze_results, r = get_results(r_dir, print_flag=False)
-    # plt.plot(np.unique(epoch_file['epoch_no']), maze_results, color='g', label="No. of correct mazes generated")
-    # plt.title("Correct mazes")
-    # plt.legend()
+    maze_results, _ = get_results(r_dir, print_flag=False)
+    plt.plot(arr, maze_results, color='g', label="No. of correct mazes generated")
+    plt.tight_layout()
+    plt.title("Correct mazes")
+    plt.legend()
     plt.show()
+    plt.savefig("vgan_gsoftmax_mazes.eps", dpi = 300, format="eps")
 
 
 def start():
