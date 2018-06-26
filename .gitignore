@@ -14,6 +14,12 @@ pip-selfcheck.json
 pyvenv.cfg
 lib64
 
+temp
+.idea/
+**/runs/
+**/tensorboard_data.json
+
+**/training_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -129,7 +135,8 @@ ENV/
 .spyproject
 
 
-# Rope project settings
+# Rope project settings*.ipynb
+
 .ropeproject
 
 
