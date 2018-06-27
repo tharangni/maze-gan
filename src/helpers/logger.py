@@ -49,9 +49,10 @@ class Logger:
             fake_imgs: The generated images. A Tensor of size batch_size x 1 x ...
             step: The current global step.
         """
-        path = os.path.join(self.image_path, 'real_{0:0=8d}.png').format(step)
-        save_image(real_imgs.data[:25], path, nrow=5, normalize=True)
-        save_image(fake_imgs.data[:25], path, nrow=5, normalize=True)
+        real_path = os.path.join(self.image_path, 'real_{0:0=8d}.png').format(step)
+        fake_path = os.path.join(self.image_path, 'fake_{0:0=8d}.png').format(step)
+        save_image(real_imgs.data[:25], real_path, nrow=5, normalize=True)
+        save_image(fake_imgs.data[:25], fake_path, nrow=5, normalize=True)
 
     def log_tensorboard_basic_data(self, g_loss: Variable, d_loss: Variable, real_scores: Variable,
                                    fake_scores: Variable, step: int) -> None:

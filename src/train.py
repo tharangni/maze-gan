@@ -23,7 +23,7 @@ if __name__ == '__main__':
                         help='size of each MNIST image dimension (Discriminator input)')
     parser.add_argument('--maze_size', type=int, default=8,
                         help='size of each maze dimension (Discriminator input)')
-    parser.add_argument('--latent_dim', type=int, default=100,
+    parser.add_argument('--latent_dim', type=int, default=128,
                         help='The dimension of the latent space (Generator input)')
     parser.add_argument('--temp', type=float, default=0.2, help='temperature to use for gumbel-softmax quantization')
     opt = parser.parse_args()

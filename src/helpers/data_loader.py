@@ -10,22 +10,23 @@ CUDA = True if torch.cuda.is_available() else False
 TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
 
 
-def mnist(opt: Namespace, binary: bool) -> torch.Tensor:
+def mnist(opt: Namespace, binary: bool, is_image: bool = False) -> torch.Tensor:
     os.makedirs(os.path.join(ROOT, 'data', 'mnist'), exist_ok=True)
+    transform = []
+
+    if not is_image:
+        transform.append(transforms.ToPILImage())
+    transform.append(transforms.Resize(opt.img_size))
+    transform.append(transforms.ToTensor())
     if binary:
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Lambda(lambda x: torch.round(x))
-        ])
+        transform.append(transforms.Lambda(lambda x: torch.round(x)))
     else:
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+        transform.append(transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
 
     data = datasets.MNIST(os.path.join(ROOT, 'data', 'mnist'), train=True, download=True,
-                          transform=transform)
-    mnist_loader = torch.zeros_like(data.train_data).type(TENSOR)
+                          transform=transforms.Compose(transform))
+    mnist_loader = torch.zeros(data.train_data.size(0), opt.img_size, opt.img_size).type(TENSOR)
+
     for idx in range(len(data)):
         mnist_loader[idx], _ = data[idx]
 
