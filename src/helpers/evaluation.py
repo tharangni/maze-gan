@@ -1,6 +1,18 @@
+from typing import List
+
 from helpers import maze_utils as mu
 from helpers import misc
 import torch
+
+from helpers.logger import Logger
+
+
+def draw(files: List[str], logger: Logger):
+    for file in files:
+        batch = int(file.split('_')[1].split('.')[0])
+        fake_imgs = torch.load(file, map_location='cpu')
+
+        logger.save_image_grid(None, fake_imgs, batch)
 
 
 def check_ind(files):

@@ -10,7 +10,8 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--resume', type=bool, help='whether to resume training')
 
     # -- LOGGING OPTIONS -- #
-    parser.add_argument('-l', '--log_details', type=bool, help='whether to log parameter and gradient data')
+    parser.add_argument('-l', '--log_details', type=bool, default=True,
+                        help='whether to log parameter and gradient data')
 
     # -- HYPER PARAMS -- #
     parser.add_argument('--n_epochs', type=int, default=200, help='number of epochs of training')

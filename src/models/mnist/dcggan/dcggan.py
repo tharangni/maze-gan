@@ -50,15 +50,15 @@ def run(opt):
                 nn.Conv2d(128, 64, 3, stride=1, padding=1),
                 nn.BatchNorm2d(64, 0.8),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(64, 1, 3, stride=1, padding=1)
+                nn.Conv2d(64, 1, 3, stride=1, padding=1),
+                nn.Tanh()
             )
 
             self.map2 = nn.Linear(opt.img_size ** 2, opt.img_size ** 2 * 2)
             self.out = nn.LogSoftmax(dim=-1)
 
         def forward(self, z_batch):
-            map1 = self.map1(z_batch)
-            map1 = map1.view(map1.size(0), 128, self.init_size, self.init_size)
+            map1 = self.map1(z_batch).view(opt.batch_size, 128, self.init_size, self.init_size)
             conv = self.conv_blocks(map1)
             map2 = self.map2(conv.view(opt.batch_size, opt.img_size ** 2)).view(opt.batch_size, opt.img_size ** 2, 2)
             out = self.out(map2)

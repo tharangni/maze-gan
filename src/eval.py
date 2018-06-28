@@ -1,7 +1,13 @@
+import numpy as np
+import torch
+
+from helpers.logger import Logger
 import helpers.evaluation as ev
 import argparse
 import glob
 import os
+
+from matplotlib import pyplot as plt
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -14,10 +20,15 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     print(opt)
 
-    path = os.path.abspath(os.path.join('models', 'mazes', opt.model, 'samples', opt.run, '*.sample.tar'))
-    sample_files = glob.glob(path)
+    module_path = os.path.abspath(os.path.join('models', opt.dataset, opt.model))
+    samples_path = os.path.abspath(os.path.join('models', opt.dataset, opt.model, 'samples', opt.run, '*.sample.tar'))
+    sample_files = glob.glob(samples_path)
     sample_files.sort()
 
+    if opt.action == 'draw':
+        print(sample_files)
+        logger = Logger(module_path, opt.run)
+        ev.draw(sample_files, logger)
     if opt.action == 'check_ind':
         ev.check_ind(sample_files)
     if opt.action == 'check_avg':

@@ -1,3 +1,5 @@
+from typing import Union
+
 from torchvision.utils import save_image
 from tensorboardX import SummaryWriter
 from torch.autograd import Variable
@@ -7,13 +9,14 @@ import os
 
 # noinspection PyMethodMayBeStatic
 class Logger:
-    def __init__(self, module_path: str, run):
+    def __init__(self, module_path: str, run: Union[str, None]):
         """Instantiate a logger to handle console and disk output.
 
         Args:
             module_path: The path to the module that is currently being executed.
             run: An id of the current run. Should match the Tensorboard run id. Usually a datetime.
         """
+
         self.writer = SummaryWriter(log_dir=os.path.join(module_path, 'runs', run))
         self.image_path = os.path.join(module_path, 'images', run)
         self.sample_path = os.path.join(module_path, 'samples', run)
@@ -51,8 +54,12 @@ class Logger:
         """
         real_path = os.path.join(self.image_path, 'real_{0:0=8d}.png').format(step)
         fake_path = os.path.join(self.image_path, 'fake_{0:0=8d}.png').format(step)
-        save_image(real_imgs.data[:25], real_path, nrow=5, normalize=True)
-        save_image(fake_imgs.data[:25], fake_path, nrow=5, normalize=True)
+        if real_imgs is not None:
+            size = real_imgs.size()
+            save_image(real_imgs.view(size[0], 1, size[1], size[1]).data[:25], real_path, nrow=5, normalize=True)
+        if fake_imgs is not None:
+            size = fake_imgs.size()
+            save_image(fake_imgs.view(size[0], 1, size[1], size[1]).data[:25], fake_path, nrow=5, normalize=True)
 
     def log_tensorboard_basic_data(self, g_loss: Variable, d_loss: Variable, real_scores: Variable,
                                    fake_scores: Variable, step: int) -> None:
