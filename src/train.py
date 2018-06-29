@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     # -- LOGGING OPTIONS -- #
     parser.add_argument('-l', '--log_details', type=bool, default=True,
-                        help='whether to log parameter and gradient data')
+                        help='whether to log parameter, gradient data and epochs')
 
     # -- HYPER PARAMS -- #
     parser.add_argument('--n_epochs', type=int, default=200, help='number of epochs of training')

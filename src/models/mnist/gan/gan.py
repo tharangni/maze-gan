@@ -10,7 +10,6 @@ import numpy as np
 import torch
 import os
 
-
 ROOT = os.path.abspath(os.path.join(os.getcwd(), '..'))
 CWD = os.path.dirname(os.path.abspath(__file__))
 RUN = datetime.today().strftime('%Y-%m-%d/%H-%M-%S')
@@ -94,10 +93,11 @@ def run(args: Namespace):
     if args.resume:
         RUN, current_epoch = checkpoint_g.load()
         _, _ = checkpoint_d.load()
-        LOGGER = Logger(CWD, RUN)
+        # TODO: need to change opt here to indicate there is a new run
+        LOGGER = Logger(CWD, RUN, args)
         print('Loaded models from disk. Starting at epoch {}.'.format(current_epoch + 1))
     else:
-        LOGGER = Logger(CWD, RUN)
+        LOGGER = Logger(CWD, RUN, args)
 
     # Configure data loader
     opts = {
@@ -165,4 +165,4 @@ def run(args: Namespace):
         # -- Save model checkpoints after each epoch -- #
         checkpoint_g.save(RUN, epoch)
         checkpoint_d.save(RUN, epoch)
-    LOGGER.writer.close()
+    LOGGER.close_writers()
