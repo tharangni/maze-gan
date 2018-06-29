@@ -11,7 +11,7 @@ class Checkpoint:
         Args:
             module_path: The path to the module that is being saved. Retrievable with `os.path.abspath(__file__)`
             model: The model to save / load (Generator or Discriminator)
-            optimizer: The optimizer save / load
+            optimizer: The optimizer to save / load
         """
 
         checkpoint_dir = os.path.join(module_path, 'checkpoints')
