@@ -5,7 +5,7 @@ Calculating the baseline for a fixed baseline against percentage of correct maze
 import os
 import csv
 import numpy as np
-from maze_gen import check_maze, draw_maze
+from maze_utils import check_maze, draw_maze
 
 def random_maze(mx, my, q):
     count = 0.0
