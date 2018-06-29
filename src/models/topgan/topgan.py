@@ -139,9 +139,11 @@ def run(args: Namespace):
     for epoch in range(current_epoch, args.n_epochs):
         for i, imgs in enumerate(mnist_loader):
 
-            # Adversarial ground truths
-            valid = Variable(torch.ones(imgs.shape[0], 1).type(TENSOR), requires_grad=False)
-            fake = Variable(torch.zeros(imgs.shape[0], 1).type(TENSOR), requires_grad=False)
+            # Adversarial ground truths with noise
+            valid = 0.8 + torch.rand(imgs.shape[0], 1).type(TENSOR) * 0.3
+            valid = Variable(valid, requires_grad=False)
+            fake = torch.rand(imgs.shape[0], 1).type(TENSOR) * 0.3
+            fake = Variable(fake, requires_grad=False)
 
             # Configure input
             real_imgs = Variable(imgs)

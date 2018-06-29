@@ -5,6 +5,8 @@ from torchvision.transforms import transforms
 from helpers.checkpoint import Checkpoint
 from helpers import st_gumbel_softmax
 from torch.autograd import Variable
+
+from helpers.initialization import weights_init_xavier
 from helpers.logger import Logger
 from helpers import data_loader
 from datetime import datetime
@@ -20,15 +22,6 @@ CUDA = True if torch.cuda.is_available() else False
 TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
 
 LOGGER = None
-
-
-def weights_init_normal(m):
-    classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
-        torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find('BatchNorm2d') != -1:
-        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
-        torch.nn.init.constant_(m.bias.data, 0.0)
 
 
 def run(args: Namespace):
@@ -116,8 +109,8 @@ def run(args: Namespace):
         adversarial_loss.cuda()
 
     # Initialize weights
-    generator.apply(weights_init_normal)
-    discriminator.apply(weights_init_normal)
+    generator.apply(weights_init_xavier)
+    discriminator.apply(weights_init_xavier)
 
     # Create checkpoint handler and load state if required
     current_epoch = 0
@@ -141,9 +134,11 @@ def run(args: Namespace):
     for epoch in range(current_epoch, args.n_epochs):
         for i, imgs in enumerate(mnist_loader):
 
-            # Adversarial ground truths
-            valid = Variable(torch.ones(imgs.shape[0], 1).type(TENSOR), requires_grad=False)
-            fake = Variable(torch.zeros(imgs.shape[0], 1).type(TENSOR), requires_grad=False)
+            # Adversarial ground truths with noise
+            valid = 0.8 + torch.rand(imgs.shape[0], 1).type(TENSOR) * 0.3
+            valid = Variable(valid, requires_grad=False)
+            fake = torch.rand(imgs.shape[0], 1).type(TENSOR) * 0.3
+            fake = Variable(fake, requires_grad=False)
 
             # Configure input
             real_imgs = Variable(imgs)
