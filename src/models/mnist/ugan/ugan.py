@@ -1,4 +1,5 @@
 from helpers.checkpoint import Checkpoint
+from helpers.initialization import weights_init_xavier
 from helpers import st_gumbel_softmax
 from torch.autograd import Variable
 from helpers.logger import Logger
@@ -16,21 +17,6 @@ CUDA = True if torch.cuda.is_available() else False
 TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
 
 LOGGER = None
-
-
-def weights_init_xavier(m):
-    if isinstance(m, nn.Conv2d):
-        print(m)
-        torch.nn.init.xavier_normal_(m.weight, gain=1)
-        torch.nn.init.constant_(m.bias, 0.0)
-    elif isinstance(m, nn.Linear):
-        print(m)
-        torch.nn.init.xavier_normal_(m.weight, gain=1)
-        torch.nn.init.constant_(m.bias, 0.0)
-    elif isinstance(m, nn.BatchNorm2d):
-        print(m)
-        torch.nn.init.constant_(m.weight, 1.0)
-        torch.nn.init.constant_(m.bias, 0.0)
 
 
 def run(opt):
