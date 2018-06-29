@@ -56,10 +56,10 @@ class Logger:
         fake_path = os.path.join(self.image_path, 'fake_{0:0=8d}.png').format(step)
         if real_imgs is not None:
             size = real_imgs.size()
-            save_image(real_imgs.view(size[0], 1, size[1], size[1]).data[:25], real_path, nrow=5, normalize=True)
+            save_image(real_imgs.view(size[0], 1, size[-1], size[-1]).data[:25], real_path, nrow=5, normalize=True)
         if fake_imgs is not None:
             size = fake_imgs.size()
-            save_image(fake_imgs.view(size[0], 1, size[1], size[1]).data[:25], fake_path, nrow=5, normalize=True)
+            save_image(fake_imgs.view(size[0], 1, size[-1], size[-1]).data[:25], fake_path, nrow=5, normalize=True)
 
     def log_tensorboard_basic_data(self, g_loss: Variable, d_loss: Variable, real_scores: Variable,
                                    fake_scores: Variable, step: int) -> None:
