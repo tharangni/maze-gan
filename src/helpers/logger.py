@@ -5,11 +5,13 @@ from tensorboardX import SummaryWriter
 from torch.autograd import Variable
 import torch
 import os
+import csv
+import json
 
 
 # noinspection PyMethodMayBeStatic
 class Logger:
-    def __init__(self, module_path: str, run: Union[str, None]):
+    def __init__(self, module_path: str, run: Union[str, None], opt):
         """Instantiate a logger to handle console and disk output.
 
         Args:
@@ -17,11 +19,17 @@ class Logger:
             run: An id of the current run. Should match the Tensorboard run id. Usually a datetime.
         """
 
-        self.writer = SummaryWriter(log_dir=os.path.join(module_path, 'runs', run))
-        self.image_path = os.path.join(module_path, 'images', run)
         self.sample_path = os.path.join(module_path, 'samples', run)
-        os.makedirs(self.image_path, exist_ok=True)
+        self.image_path = os.path.join(module_path, 'images', run)
         os.makedirs(self.sample_path, exist_ok=True)
+        os.makedirs(self.image_path, exist_ok=True)
+
+        self.writer = SummaryWriter(log_dir=os.path.join(module_path, 'runs', run))
+        path = os.path.join(module_path, 'runs', run, )
+        self.log_hyper_parameters(os.path.join(path, "model_params.txt"), opt)
+        self.csv_file = open(os.path.join(path, "epoch.csv"), 'w+', newline='')
+        self.csv_writer = csv.writer(self.csv_file, delimiter=',')  # for looging results for graphing.
+        self.csv_writer.writerow(['epoch_no', 'batch_no', 'd_loss', 'g_loss', 'D(x)', 'D(G(X))'])
 
     def log_batch_statistics(self, epoch: int, epochs: int, batch: int, batches: int,
                              d_loss: Variable, g_loss: Variable,
@@ -41,6 +49,8 @@ class Logger:
         print("[Epoch %d/%d] [Batch %d/%d] [D loss: %.4f] [G loss: %.4f] [D(x): %.2f] [D(G(z)): %.2f]" %
               (epoch + 1, epochs, batch, batches, d_loss.item(), g_loss.item(),
                real_scores.detach().mean().item(), fake_scores.detach().mean().item()))
+        self.csv_writer.writerow([epoch + 1, batch + 1, d_loss.item(), g_loss.item(), real_scores.mean().item(),
+                                  fake_scores.mean().item()])
 
     def save_image_grid(self, real_imgs, fake_imgs, step) -> None:
         """Save a  5 x 5 grid of images, real and generated. Does not do any upscaling on the images,
@@ -107,3 +117,13 @@ class Logger:
         input_size = data.size(-1)
         path = os.path.join(self.sample_path, 'fake_{0:0=8d}.sample.tar'.format(step))
         torch.save(data.detach().cpu().view(-1, input_size, input_size), path)
+
+    def log_hyper_parameters(self, path, hyperparameters):
+        exDict = {'hyperparameters': vars(hyperparameters)}
+
+        with open(path, 'w+') as file:
+            file.write(json.dumps(exDict))  # use `json.loads` to do the reverse
+
+    def close_writers(self):
+        self.writer.close()
+        self.csv_file.close()

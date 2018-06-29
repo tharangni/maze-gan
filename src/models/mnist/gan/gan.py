@@ -92,13 +92,14 @@ def run(opt):
     if opt.resume:
         RUN, current_epoch = checkpoint_g.load()
         _, _ = checkpoint_d.load()
-        LOGGER = Logger(CWD, RUN)
+        #need to change opt here to indicate there is a new run
+        LOGGER = Logger(CWD, RUN, opt)
         print('Loaded models from disk. Starting at epoch {}.'.format(current_epoch + 1))
     else:
-        LOGGER = Logger(CWD, RUN)
+        LOGGER = Logger(CWD, RUN, opt)
 
     # Configure data loader
-    mnist_loader = data_loader.mnist(opt, False)
+    mnist_loader = data_loader.mnist(opt, False, is_image=True)
 
     for epoch in range(current_epoch, opt.n_epochs):
         for i, imgs in enumerate(mnist_loader):
@@ -159,4 +160,4 @@ def run(opt):
         # -- Save model checkpoints after each epoch -- #
         checkpoint_g.save(RUN, epoch)
         checkpoint_d.save(RUN, epoch)
-    LOGGER.writer.close()
+    LOGGER.close_writers()

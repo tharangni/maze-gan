@@ -165,4 +165,4 @@ def run(opt):
         # -- Save model checkpoints after each epoch -- #
         checkpoint_g.save(RUN, epoch)
         checkpoint_d.save(RUN, epoch)
-    LOGGER.writer.close()
+    LOGGER.close_writers()
