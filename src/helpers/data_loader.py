@@ -1,5 +1,6 @@
 import os
 from argparse import Namespace
+from typing import Union
 
 import torch
 from torchvision import datasets
@@ -10,14 +11,19 @@ CUDA = True if torch.cuda.is_available() else False
 TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
 
 
-def mnist(opt: Namespace, binary: bool, is_image: bool = False) -> torch.Tensor:
+def mnist(opt: Namespace, binary: bool, is_image: bool = False, crop: Union[None, int] = None) -> torch.Tensor:
     os.makedirs(os.path.join(ROOT, 'data', 'mnist'), exist_ok=True)
     transform = []
 
     if not is_image:
         transform.append(transforms.ToPILImage())
+
+    if crop is not None:
+        transform.append(transforms.CenterCrop(crop))
+
     transform.append(transforms.Resize(opt.img_size))
     transform.append(transforms.ToTensor())
+
     if binary:
         transform.append(transforms.Lambda(lambda x: torch.round(x)))
     else:

@@ -8,8 +8,6 @@ import torch.nn as nn
 import torch
 import os
 
-import torch.distributions
-
 ROOT = os.path.abspath(os.path.join(os.getcwd(), '..'))
 CWD = os.path.dirname(os.path.abspath(__file__))
 RUN = datetime.today().strftime('%Y-%m-%d/%H-%M-%S')
@@ -20,13 +18,19 @@ TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
 LOGGER = None
 
 
-def weights_init_normal(m):
-    classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
-        torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find('BatchNorm2d') != -1:
-        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
-        torch.nn.init.constant_(m.bias.data, 0.0)
+def weights_init_xavier(m):
+    if isinstance(m, nn.Conv2d):
+        print(m)
+        torch.nn.init.xavier_normal_(m.weight, gain=1)
+        torch.nn.init.constant_(m.bias, 0.0)
+    elif isinstance(m, nn.Linear):
+        print(m)
+        torch.nn.init.xavier_normal_(m.weight, gain=1)
+        torch.nn.init.constant_(m.bias, 0.0)
+    elif isinstance(m, nn.BatchNorm2d):
+        print(m)
+        torch.nn.init.constant_(m.weight, 1.0)
+        torch.nn.init.constant_(m.bias, 0.0)
 
 
 def run(opt):
@@ -41,23 +45,24 @@ def run(opt):
             super(Generator, self).__init__()
 
             self.init_size = opt.img_size // 4
-            self.map1 = nn.Linear(opt.latent_dim, 128 * self.init_size ** 2)
+            self.filters = 32
+            self.map1 = nn.Linear(opt.latent_dim, self.filters * self.init_size ** 2)
             self.conv_blocks = nn.Sequential(
-                nn.BatchNorm2d(128),
+                nn.BatchNorm2d(self.filters),
                 nn.Upsample(scale_factor=2),
-                nn.Conv2d(128, 128, 3, stride=1, padding=1),
-                nn.BatchNorm2d(128, 0.8),
+                nn.Conv2d(self.filters, self.filters, 3, stride=1, padding=1),
+                nn.BatchNorm2d(self.filters, 0.8),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Upsample(scale_factor=2),
-                nn.Conv2d(128, 64, 3, stride=1, padding=1),
-                nn.BatchNorm2d(64, 0.8),
+                nn.Conv2d(self.filters, self.filters // 2, 3, stride=1, padding=1),
+                nn.BatchNorm2d(self.filters // 2, 0.8),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(64, 1, 3, stride=1, padding=1),
+                nn.Conv2d(self.filters // 2, 1, 3, stride=1, padding=1),
             )
             self.out = nn.LogSigmoid()
 
         def forward(self, z_batch):
-            map1 = self.map1(z_batch).view(opt.batch_size, 128, self.init_size, self.init_size)
+            map1 = self.map1(z_batch).view(opt.batch_size, self.filters, self.init_size, self.init_size)
             conv = self.conv_blocks(map1)
 
             white_prob = self.out(conv).view(opt.batch_size, opt.img_size ** 2, 1)
@@ -69,11 +74,14 @@ def run(opt):
             return img.view(img.size(0), *img_shape)
 
     class Discriminator(nn.Module):
+
         def __init__(self):
             super(Discriminator, self).__init__()
 
-            def discriminator_block(in_filters, out_filters, bn=True):
-                block = [nn.Conv2d(in_filters, out_filters, 3, 2, 1),
+            self.filters = 8
+
+            def discriminator_block(in_filters, out_filters, step, bn=True):
+                block = [nn.Conv2d(in_filters, out_filters, 3, step, 1),
                          nn.LeakyReLU(0.2, inplace=True),
                          nn.Dropout2d(0.25)]
                 if bn:
@@ -81,16 +89,16 @@ def run(opt):
                 return block
 
             self.model = nn.Sequential(
-                *discriminator_block(1, 16, bn=False),
-                *discriminator_block(16, 32),
-                *discriminator_block(32, 64),
-                *discriminator_block(64, 128),
+                *discriminator_block(1, self.filters, 1, bn=False),
+                *discriminator_block(self.filters, self.filters * 2, 2),
+                *discriminator_block(self.filters * 2, self.filters * 4, 1),
+                *discriminator_block(self.filters * 4, self.filters * 8, 2),
             )
 
             # The height and width of downsampled image
-            ds_size = opt.img_size // 2 ** 4
+            ds_size = opt.img_size // 2 ** 2
             self.adv_layer = nn.Sequential(
-                nn.Linear(128 * ds_size ** 2, 1),
+                nn.Linear(self.filters * 8 * ds_size ** 2, 1),
                 nn.Sigmoid()
             )
 
@@ -118,8 +126,8 @@ def run(opt):
         adversarial_loss.cuda()
 
     # Initialize weights
-    generator.apply(weights_init_normal)
-    discriminator.apply(weights_init_normal)
+    generator.apply(weights_init_xavier)
+    discriminator.apply(weights_init_xavier)
 
     # Create checkpoint handler and load state if required
     current_epoch = 0
@@ -134,7 +142,7 @@ def run(opt):
         LOGGER = Logger(CWD, RUN)
 
     # Configure data loader
-    mnist_loader = data_loader.mnist(opt, binary=True, is_image=True)
+    mnist_loader = data_loader.mnist(opt, binary=True, is_image=True, crop=20)
 
     for epoch in range(current_epoch, opt.n_epochs):
         for i, imgs in enumerate(mnist_loader):
@@ -184,7 +192,8 @@ def run(opt):
             if batches_done % opt.sample_interval == 0:
                 LOGGER.log_generated_sample(fake_images, batches_done)
 
-                LOGGER.log_batch_statistics(epoch, opt.n_epochs, i + 1, len(mnist_loader), d_loss, g_loss, real_scores,
+                LOGGER.log_batch_statistics(epoch, opt.n_epochs, i + 1, len(mnist_loader), d_loss, g_loss,
+                                            real_scores,
                                             fake_scores)
 
                 LOGGER.log_tensorboard_basic_data(g_loss, d_loss, real_scores, fake_scores, batches_done)
@@ -195,4 +204,4 @@ def run(opt):
         # -- Save model checkpoints after each epoch -- #
         checkpoint_g.save(RUN, epoch)
         checkpoint_d.save(RUN, epoch)
-    LOGGER.close_writers()
+    LOGGER.writer.close()
