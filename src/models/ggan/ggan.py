@@ -1,6 +1,7 @@
 from argparse import Namespace
 
 from helpers.checkpoint import Checkpoint
+from helpers import st_gumbel_softmax
 from torch.autograd import Variable
 from helpers.logger import Logger
 from helpers import data_loader
@@ -24,8 +25,9 @@ def run(args: Namespace):
     global LOGGER
     global RUN
 
-    img_shape = (1, args.img_size, args.img_size)  # one channel only
+    img_shape = (1, args.img_size, args.img_size)
 
+    # noinspection PyMethodMayBeStatic
     class Generator(nn.Module):
         def __init__(self):
             super(Generator, self).__init__()
@@ -38,18 +40,20 @@ def run(args: Namespace):
                 return layers
 
             self.model = nn.Sequential(
-                *block(args.latent_dim, 128, normalize=False),
-                *block(128, 256),
+                *block(args.latent_dim, 256, normalize=False),
                 *block(256, 512),
                 *block(512, 1024),
-                nn.Linear(1024, int(np.prod(img_shape))),
-                nn.Tanh()
+                *block(1024, 2048),
+                nn.Linear(2048, int(np.prod(img_shape)) * 2),
             )
+            self.LogSoftmax = nn.LogSoftmax(dim=-1)
 
-        def forward(self, z):
-            img = self.model(z)
-            img = img.view(img.size(0), *img_shape)
-            return img
+        def forward(self, z_batch):
+            img_probs = self.model(z_batch)
+            img_logits = self.LogSoftmax(img_probs.view(args.batch_size, -1, 2))
+            img = st_gumbel_softmax.straight_through(img_logits, args.temp, True)
+
+            return img.view(img.size(0), *img_shape)
 
     class Discriminator(nn.Module):
         def __init__(self):
@@ -69,7 +73,6 @@ def run(args: Namespace):
             validity = self.model(img_flat)
             return validity
 
-    # Define losses
     adversarial_loss = torch.nn.BCELoss()
 
     # Initialize generator and discriminator
@@ -93,7 +96,6 @@ def run(args: Namespace):
     if args.resume:
         RUN, current_epoch = checkpoint_g.load()
         _, _ = checkpoint_d.load()
-        # TODO: need to change opt here to indicate there is a new run
         LOGGER = Logger(CWD, RUN, args)
         print('Loaded models from disk. Starting at epoch {}.'.format(current_epoch + 1))
     else:
@@ -101,7 +103,7 @@ def run(args: Namespace):
 
     # Configure data loader
     opts = {
-        'binary': False,
+        'binary': True,
         'crop': 20
     }
     mnist_loader = data_loader.load(args, opts)
@@ -110,8 +112,8 @@ def run(args: Namespace):
         for i, imgs in enumerate(mnist_loader):
 
             # Adversarial ground truths
-            valid = Variable(TENSOR(imgs.shape[0], 1).fill_(1.0), requires_grad=False)
-            fake = Variable(TENSOR(imgs.shape[0], 1).fill_(0.0), requires_grad=False)
+            valid = Variable(torch.ones(imgs.shape[0], 1).type(TENSOR), requires_grad=False)
+            fake = Variable(torch.zeros(imgs.shape[0], 1).type(TENSOR), requires_grad=False)
 
             # Configure input
             real_imgs = Variable(imgs)
@@ -123,7 +125,7 @@ def run(args: Namespace):
             optimizer_g.zero_grad()
 
             # Sample noise as generator input
-            z = Variable(TENSOR(np.random.normal(0, 1, (imgs.shape[0], args.latent_dim))))
+            z = Variable(torch.randn(imgs.shape[0], args.latent_dim).type(TENSOR))
 
             # Generate a batch of images
             fake_images = generator(z)

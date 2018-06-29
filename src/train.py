@@ -31,5 +31,5 @@ if __name__ == '__main__':
 
     print(opt)
 
-    model = importlib.import_module('.'.join(['models', opt.dataset, opt.model, opt.model]))
+    model = importlib.import_module('.'.join(['models', opt.model, opt.model]))
     model.run(opt)

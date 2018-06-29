@@ -18,7 +18,7 @@ class Checkpoint:
         os.makedirs(checkpoint_dir, exist_ok=True)
         self.model = model
         self.optimizer = optimizer
-        self.path = os.path.join(checkpoint_dir, '{}.checkpoint.pth.tar'.format(type(model).__name__.lower()))
+        self.path = os.path.join(checkpoint_dir,'{}.checkpoint.pth.tar'.format( type(model).__name__.lower()))
 
     def save(self, run: str, epoch: int) -> None:
         """Persist the current state of the model and optimizer to disk. Stores:

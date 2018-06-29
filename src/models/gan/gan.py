@@ -1,7 +1,8 @@
+from argparse import Namespace
+
 from helpers.checkpoint import Checkpoint
 from torch.autograd import Variable
 from helpers.logger import Logger
-from helpers import st_heaviside
 from helpers import data_loader
 from datetime import datetime
 import torch.nn as nn
@@ -19,13 +20,12 @@ TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
 LOGGER = None
 
 
-def run(opt):
+def run(args: Namespace):
     global LOGGER
     global RUN
 
-    img_shape = (1, opt.img_size, opt.img_size)
+    img_shape = (1, args.img_size, args.img_size)  # one channel only
 
-    # noinspection PyMethodMayBeStatic
     class Generator(nn.Module):
         def __init__(self):
             super(Generator, self).__init__()
@@ -38,7 +38,7 @@ def run(opt):
                 return layers
 
             self.model = nn.Sequential(
-                *block(opt.latent_dim, 128, normalize=False),
+                *block(args.latent_dim, 128, normalize=False),
                 *block(128, 256),
                 *block(256, 512),
                 *block(512, 1024),
@@ -46,10 +46,10 @@ def run(opt):
                 nn.Tanh()
             )
 
-        def forward(self, z):
-            img = st_heaviside.straight_through(self.model(z))
-
-            return img.view(img.size(0), *img_shape)
+        def forward(self, z_batch):
+            img = self.model(z_batch)
+            img = img.view(img.size(0), *img_shape)
+            return img
 
     class Discriminator(nn.Module):
         def __init__(self):
@@ -69,6 +69,7 @@ def run(opt):
             validity = self.model(img_flat)
             return validity
 
+    # Define losses
     adversarial_loss = torch.nn.BCELoss()
 
     # Initialize generator and discriminator
@@ -76,8 +77,8 @@ def run(opt):
     discriminator = Discriminator()
 
     # Initialize optimizers for generator and discriminator
-    optimizer_g = torch.optim.Adam(generator.parameters(), lr=opt.g_lr)
-    optimizer_d = torch.optim.Adam(discriminator.parameters(), lr=opt.d_lr)
+    optimizer_g = torch.optim.Adam(generator.parameters(), lr=args.g_lr)
+    optimizer_d = torch.optim.Adam(discriminator.parameters(), lr=args.d_lr)
 
     # Map to CUDA if necessary
     if CUDA:
@@ -89,23 +90,27 @@ def run(opt):
     current_epoch = 0
     checkpoint_g = Checkpoint(CWD, generator, optimizer_g)
     checkpoint_d = Checkpoint(CWD, discriminator, optimizer_d)
-    if opt.resume:
+    if args.resume:
         RUN, current_epoch = checkpoint_g.load()
         _, _ = checkpoint_d.load()
-        LOGGER = Logger(CWD, RUN)
+        LOGGER = Logger(CWD, RUN, args)
         print('Loaded models from disk. Starting at epoch {}.'.format(current_epoch + 1))
     else:
-        LOGGER = Logger(CWD, RUN)
+        LOGGER = Logger(CWD, RUN, args)
 
     # Configure data loader
-    mnist_loader = data_loader.mnist(opt, True)
+    opts = {
+        'binary': False,
+        'crop': 20
+    }
+    mnist_loader = data_loader.load(args, opts)
 
-    for epoch in range(current_epoch, opt.n_epochs):
+    for epoch in range(current_epoch, args.n_epochs):
         for i, imgs in enumerate(mnist_loader):
 
             # Adversarial ground truths
-            valid = Variable(torch.ones(imgs.shape[0], 1).type(TENSOR), requires_grad=False)
-            fake = Variable(torch.zeros(imgs.shape[0], 1).type(TENSOR), requires_grad=False)
+            valid = Variable(TENSOR(imgs.shape[0], 1).fill_(1.0), requires_grad=False)
+            fake = Variable(TENSOR(imgs.shape[0], 1).fill_(0.0), requires_grad=False)
 
             # Configure input
             real_imgs = Variable(imgs)
@@ -117,7 +122,7 @@ def run(opt):
             optimizer_g.zero_grad()
 
             # Sample noise as generator input
-            z = Variable(torch.randn(imgs.shape[0], opt.latent_dim).type(TENSOR))
+            z = Variable(TENSOR(np.random.normal(0, 1, (imgs.shape[0], args.latent_dim))))
 
             # Generate a batch of images
             fake_images = generator(z)
@@ -145,15 +150,15 @@ def run(opt):
             optimizer_d.step()
 
             batches_done = epoch * len(mnist_loader) + i + 1
-            if batches_done % opt.sample_interval == 0:
+            if batches_done % args.sample_interval == 0:
                 LOGGER.log_generated_sample(fake_images, batches_done)
 
-                LOGGER.log_batch_statistics(epoch, opt.n_epochs, i + 1, len(mnist_loader), d_loss, g_loss, real_scores,
+                LOGGER.log_batch_statistics(epoch, args.n_epochs, i + 1, len(mnist_loader), d_loss, g_loss, real_scores,
                                             fake_scores)
 
                 LOGGER.log_tensorboard_basic_data(g_loss, d_loss, real_scores, fake_scores, batches_done)
 
-                if opt.log_details:
+                if args.log_details:
                     LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
                     LOGGER.log_tensorboard_parameter_data(discriminator, generator, batches_done)
         # -- Save model checkpoints after each epoch -- #

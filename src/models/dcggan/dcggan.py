@@ -1,3 +1,5 @@
+from argparse import Namespace
+
 from helpers.checkpoint import Checkpoint
 from helpers import st_gumbel_softmax
 from torch.autograd import Variable
@@ -5,10 +7,10 @@ from helpers.logger import Logger
 from helpers import data_loader
 from datetime import datetime
 import torch.nn as nn
-import numpy as np
 import torch
 import os
 
+import torch.distributions
 
 ROOT = os.path.abspath(os.path.join(os.getcwd(), '..'))
 CWD = os.path.dirname(os.path.abspath(__file__))
@@ -20,42 +22,53 @@ TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
 LOGGER = None
 
 
-def run(opt):
+def weights_init_normal(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
+    elif classname.find('BatchNorm2d') != -1:
+        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
+        torch.nn.init.constant_(m.bias.data, 0.0)
+
+
+def run(args: Namespace):
     global LOGGER
     global RUN
 
-    img_shape = (1, opt.img_size, opt.img_size)
+    img_shape = (1, args.img_size, args.img_size)
 
     # noinspection PyMethodMayBeStatic
     class Generator(nn.Module):
         def __init__(self):
             super(Generator, self).__init__()
 
-            def block(in_feat, out_feat, normalize=True):
-                layers = [nn.Linear(in_feat, out_feat)]
-                if normalize:
-                    layers.append(nn.BatchNorm1d(out_feat, 0.8))
-                layers.append(nn.LeakyReLU(0.2, inplace=True))
-                return layers
-
-            self.model = nn.Sequential(
-                *block(opt.latent_dim, 256, normalize=False),
-                *block(256, 512),
-                *block(512, 1024),
-                *block(1024, 2048),
-                nn.Linear(2048, int(np.prod(img_shape)) * 2),
+            self.init_size = args.img_size // 4
+            self.filters = 32
+            self.map1 = nn.Linear(args.latent_dim, self.filters * self.init_size ** 2)
+            self.conv_blocks = nn.Sequential(
+                nn.BatchNorm2d(self.filters),
+                nn.Upsample(scale_factor=2),
+                nn.Conv2d(self.filters, self.filters, 3, stride=1, padding=1),
+                nn.BatchNorm2d(self.filters, 0.8),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Upsample(scale_factor=2),
+                nn.Conv2d(self.filters, self.filters // 2, 3, stride=1, padding=1),
+                nn.BatchNorm2d(self.filters // 2, 0.8),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.filters // 2, 1, 3, stride=1, padding=1),
+                nn.Tanh()
             )
-            self.LogSoftmax = nn.LogSoftmax(dim=-1)
+            self.out = nn.LogSigmoid()
 
-        def pass_through(self, logits, tau):
-            # sample = F.gumbel_softmax(logits.view(-1, 2), tau=tau, hard=True)[:, 1]
-            sample = self.gumbel_softmax(logits, tau)
-            return sample[:, :, 1]
+        def forward(self, z_batch):
+            map1 = self.map1(z_batch).view(args.batch_size, self.filters, self.init_size, self.init_size)
+            conv = self.conv_blocks(map1)
 
-        def forward(self, z):
-            img_probs = self.model(z)
-            img_logits = self.LogSoftmax(img_probs.view(opt.batch_size, -1, 2))
-            img = st_gumbel_softmax.straight_through(img_logits, opt.temp, True)
+            white_prob = self.out(conv).view(args.batch_size, args.img_size ** 2, 1)
+            black_prob = self.out(-conv).view(args.batch_size, args.img_size ** 2, 1)
+
+            probs = torch.cat([black_prob, white_prob], dim=-1)
+            img = st_gumbel_softmax.straight_through(probs, args.temp, True)
 
             return img.view(img.size(0), *img_shape)
 
@@ -63,18 +76,35 @@ def run(opt):
         def __init__(self):
             super(Discriminator, self).__init__()
 
+            self.filters = 8
+
+            def discriminator_block(in_filters, out_filters, step, bn=True):
+                block = [nn.Conv2d(in_filters, out_filters, 3, step, 1),
+                         nn.LeakyReLU(0.2, inplace=True),
+                         nn.Dropout2d(0.25)]
+                if bn:
+                    block.append(nn.BatchNorm2d(out_filters, 0.8))
+                return block
+
             self.model = nn.Sequential(
-                nn.Linear(int(np.prod(img_shape)), 512),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(512, 256),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(256, 1),
+                *discriminator_block(1, self.filters, 1, bn=False),
+                *discriminator_block(self.filters, self.filters * 2, 2),
+                *discriminator_block(self.filters * 2, self.filters * 4, 1),
+                *discriminator_block(self.filters * 4, self.filters * 8, 2),
+            )
+
+            # The height and width of downsampled image
+            ds_size = args.img_size // 2 ** 2
+            self.adv_layer = nn.Sequential(
+                nn.Linear(self.filters * 8 * ds_size ** 2, 1),
                 nn.Sigmoid()
             )
 
         def forward(self, img):
-            img_flat = img.view(img.shape[0], -1)
-            validity = self.model(img_flat)
+            out = self.model(img)
+            out = out.view(out.shape[0], -1)
+            validity = self.adv_layer(out)
+
             return validity
 
     adversarial_loss = torch.nn.BCELoss()
@@ -84,8 +114,8 @@ def run(opt):
     discriminator = Discriminator()
 
     # Initialize optimizers for generator and discriminator
-    optimizer_g = torch.optim.Adam(generator.parameters(), lr=opt.g_lr)
-    optimizer_d = torch.optim.Adam(discriminator.parameters(), lr=opt.d_lr)
+    optimizer_g = torch.optim.Adam(generator.parameters(), lr=args.g_lr)
+    optimizer_d = torch.optim.Adam(discriminator.parameters(), lr=args.d_lr)
 
     # Map to CUDA if necessary
     if CUDA:
@@ -93,22 +123,30 @@ def run(opt):
         discriminator.cuda()
         adversarial_loss.cuda()
 
+    # Initialize weights
+    generator.apply(weights_init_normal)
+    discriminator.apply(weights_init_normal)
+
     # Create checkpoint handler and load state if required
     current_epoch = 0
     checkpoint_g = Checkpoint(CWD, generator, optimizer_g)
     checkpoint_d = Checkpoint(CWD, discriminator, optimizer_d)
-    if opt.resume:
+    if args.resume:
         RUN, current_epoch = checkpoint_g.load()
         _, _ = checkpoint_d.load()
-        LOGGER = Logger(CWD, RUN)
+        LOGGER = Logger(CWD, RUN, args)
         print('Loaded models from disk. Starting at epoch {}.'.format(current_epoch + 1))
     else:
-        LOGGER = Logger(CWD, RUN)
+        LOGGER = Logger(CWD, RUN, args)
 
     # Configure data loader
-    mnist_loader = data_loader.mnist(opt, True)
+    opts = {
+        'binary': True,
+        'crop': 20
+    }
+    mnist_loader = data_loader.load(args, opts)
 
-    for epoch in range(current_epoch, opt.n_epochs):
+    for epoch in range(current_epoch, args.n_epochs):
         for i, imgs in enumerate(mnist_loader):
 
             # Adversarial ground truths
@@ -125,7 +163,7 @@ def run(opt):
             optimizer_g.zero_grad()
 
             # Sample noise as generator input
-            z = Variable(torch.randn(imgs.shape[0], opt.latent_dim).type(TENSOR))
+            z = Variable(torch.randn(imgs.shape[0], args.latent_dim).type(TENSOR))
 
             # Generate a batch of images
             fake_images = generator(z)
@@ -153,15 +191,15 @@ def run(opt):
             optimizer_d.step()
 
             batches_done = epoch * len(mnist_loader) + i + 1
-            if batches_done % opt.sample_interval == 0:
+            if batches_done % args.sample_interval == 0:
                 LOGGER.log_generated_sample(fake_images, batches_done)
 
-                LOGGER.log_batch_statistics(epoch, opt.n_epochs, i + 1, len(mnist_loader), d_loss, g_loss, real_scores,
+                LOGGER.log_batch_statistics(epoch, args.n_epochs, i + 1, len(mnist_loader), d_loss, g_loss, real_scores,
                                             fake_scores)
 
                 LOGGER.log_tensorboard_basic_data(g_loss, d_loss, real_scores, fake_scores, batches_done)
 
-                if opt.log_details:
+                if args.log_details:
                     LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
                     LOGGER.log_tensorboard_parameter_data(discriminator, generator, batches_done)
         # -- Save model checkpoints after each epoch -- #
