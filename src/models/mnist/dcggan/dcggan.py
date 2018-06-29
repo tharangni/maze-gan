@@ -8,6 +8,8 @@ import torch.nn as nn
 import torch
 import os
 
+import torch.distributions
+
 ROOT = os.path.abspath(os.path.join(os.getcwd(), '..'))
 CWD = os.path.dirname(os.path.abspath(__file__))
 RUN = datetime.today().strftime('%Y-%m-%d/%H-%M-%S')
@@ -51,19 +53,18 @@ def run(opt):
                 nn.BatchNorm2d(64, 0.8),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(64, 1, 3, stride=1, padding=1),
-                nn.Tanh()
             )
-
-            self.map2 = nn.Linear(opt.img_size ** 2, opt.img_size ** 2 * 2)
-            self.out = nn.LogSoftmax(dim=-1)
+            self.out = nn.LogSigmoid()
 
         def forward(self, z_batch):
             map1 = self.map1(z_batch).view(opt.batch_size, 128, self.init_size, self.init_size)
             conv = self.conv_blocks(map1)
-            map2 = self.map2(conv.view(opt.batch_size, opt.img_size ** 2)).view(opt.batch_size, opt.img_size ** 2, 2)
-            out = self.out(map2)
 
-            img = st_gumbel_softmax.straight_through(out, opt.temp, True)
+            white_prob = self.out(conv).view(opt.batch_size, opt.img_size ** 2, 1)
+            black_prob = self.out(-conv).view(opt.batch_size, opt.img_size ** 2, 1)
+
+            probs = torch.cat([black_prob, white_prob], dim=-1)
+            img = st_gumbel_softmax.straight_through(probs, opt.temp, True)
 
             return img.view(img.size(0), *img_shape)
 
