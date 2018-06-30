@@ -65,7 +65,7 @@ def run(args: Namespace):
         def __init__(self):
             super(Discriminator, self).__init__()
 
-            self.filters = 64
+            self.filters = 16
 
             def discriminator_block(in_filters, out_filters, step, bn=True):
                 block = [nn.Conv2d(in_filters, out_filters, 3, step, 1),
