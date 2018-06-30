@@ -21,7 +21,7 @@ def check_ind(files):
         sample = torch.load(file).numpy()
         for maze in sample:
             correct += int(mu.check_maze(maze))
-        print(file, correct, '/', sample.shape[0])
+        print(file.split('/')[-1], correct, '/', sample.shape[0])
 
 
 def check_avg(files):

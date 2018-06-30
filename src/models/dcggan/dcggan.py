@@ -35,15 +35,16 @@ def run(args: Namespace):
         def __init__(self):
             super(Generator, self).__init__()
 
-            self.init_size = args.img_size // 3
+            self.init_size = args.img_size // 4
             self.filters = 32
             self.map1 = nn.Linear(args.latent_dim, self.filters * self.init_size ** 2)
             self.conv_blocks = nn.Sequential(
                 nn.BatchNorm2d(self.filters),
+                nn.Upsample(scale_factor=2),
                 nn.Conv2d(self.filters, self.filters, 3, stride=1, padding=1),
                 nn.BatchNorm2d(self.filters, 0.8),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Upsample(scale_factor=3),
+                nn.Upsample(scale_factor=2),
                 nn.Conv2d(self.filters, self.filters // 2, 3, stride=1, padding=1),
                 nn.BatchNorm2d(self.filters // 2, 0.8),
                 nn.LeakyReLU(0.2, inplace=True),
@@ -86,7 +87,7 @@ def run(args: Namespace):
             )
 
             # The height and width of down sampled image
-            ds_size = args.img_size // 3
+            ds_size = args.img_size // 2 ** 2
             self.adv_layer = nn.Sequential(
                 nn.Linear(self.filters * 8 * ds_size ** 2, 1),
                 nn.Sigmoid()

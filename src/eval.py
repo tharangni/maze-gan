@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     if opt.action == 'draw':
         print(sample_files)
-        logger = Logger(module_path, opt.run)
+        logger = Logger(module_path, opt.run, opt)
         ev.draw(sample_files, logger)
     if opt.action == 'check_ind':
         ev.check_ind(sample_files)
