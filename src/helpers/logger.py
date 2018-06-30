@@ -1,6 +1,7 @@
 from typing import Union
 
 from torchvision.utils import save_image
+from helpers import maze_utils
 from tensorboardX import SummaryWriter
 from torch.autograd import Variable
 import torch
@@ -11,7 +12,7 @@ import json
 
 # noinspection PyMethodMayBeStatic
 class Logger:
-    def __init__(self, module_path: str, run: Union[str, None], opt):
+    def __init__(self, module_path: str, run: Union[str, None], args):
         """Instantiate a logger to handle console and disk output.
 
         Args:
@@ -26,10 +27,12 @@ class Logger:
 
         self.writer = SummaryWriter(log_dir=os.path.join(module_path, 'runs', run))
         path = os.path.join(module_path, 'runs', run, )
-        self.log_hyper_parameters(os.path.join(path, "model_params.txt"), opt)
+        self.log_hyper_parameters(os.path.join(path, "model_params.txt"), args)
         self.csv_file = open(os.path.join(path, "epoch.csv"), 'w+', newline='')
         self.csv_writer = csv.writer(self.csv_file, delimiter=',')  # for looging results for graphing.
         self.csv_writer.writerow(['epoch_no', 'batch_no', 'd_loss', 'g_loss', 'D(x)', 'D(G(X))'])
+
+        self.args = args
 
     def log_batch_statistics(self, epoch: int, epochs: int, batch: int, batches: int,
                              d_loss: Variable, g_loss: Variable,
@@ -64,12 +67,21 @@ class Logger:
         """
         real_path = os.path.join(self.image_path, 'real_{0:0=8d}.png').format(step)
         fake_path = os.path.join(self.image_path, 'fake_{0:0=8d}.png').format(step)
-        if real_imgs is not None:
-            size = real_imgs.size()
-            save_image(real_imgs.view(size[0], 1, size[-1], size[-1]).data[:25], real_path, nrow=5, normalize=True)
-        if fake_imgs is not None:
-            size = fake_imgs.size()
-            save_image(fake_imgs.view(size[0], 1, size[-1], size[-1]).data[:25], fake_path, nrow=5, normalize=True)
+        if self.args.dataset == 'mnist':
+            if real_imgs is not None:
+                size = real_imgs.size()
+                save_image(real_imgs.view(size[0], 1, size[-1], size[-1]).data[:25], real_path, nrow=5, normalize=True)
+            if fake_imgs is not None:
+                size = fake_imgs.size()
+                save_image(fake_imgs.view(size[0], 1, size[-1], size[-1]).data[:25], fake_path, nrow=5, normalize=True)
+        elif self.args.dataset == 'mazes':
+            if real_imgs is not None:
+                size = real_imgs.size()
+                maze_utils.save_grid(
+                    real_imgs.view(size[0],  size[-1], size[-1]).data.numpy()[:25], real_path)
+            if fake_imgs is not None:
+                size = fake_imgs.size()
+                maze_utils.save_grid(fake_imgs.view(size[0], size[-1], size[-1]).data.numpy()[:25], fake_path)
 
     def log_tensorboard_basic_data(self, g_loss: Variable, d_loss: Variable, real_scores: Variable,
                                    fake_scores: Variable, step: int) -> None:

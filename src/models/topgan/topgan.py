@@ -56,7 +56,7 @@ def run(args: Namespace):
             black_prob = self.out(-conv).view(args.batch_size, args.img_size ** 2, 1)
 
             probs = torch.cat([black_prob, white_prob], dim=-1)
-            img = st_gumbel_softmax.straight_through(probs, args.temp, True)
+            img = st_gumbel_softmax.straight_through(probs, args.temp, False)
 
             return img.view(img.size(0), *img_shape)
 
@@ -183,6 +183,15 @@ def run(args: Namespace):
 
             batches_done = epoch * len(mnist_loader) + i + 1
             if batches_done % args.sample_interval == 0:
+                print(fake_images.size())
+                fake_images_probs = torch.cat(
+                    [
+                        1 - fake_images.view(args.batch_size, args.img_size ** 2, -1),
+                        fake_images.view(args.batch_size, args.img_size ** 2, -1)
+                    ], dim=-1)
+                fake_images = st_gumbel_softmax.quantize(fake_images_probs)[:, :, 1].view(args.batch_size, 1,
+                                                                                          args.img_size, args.img_size)
+                print(fake_images.size())
                 LOGGER.log_generated_sample(fake_images, batches_done)
 
                 LOGGER.log_batch_statistics(epoch, args.n_epochs, i + 1, len(mnist_loader), d_loss, g_loss,
