@@ -29,7 +29,7 @@ if __name__ == '__main__':
                         help='The dimension of the latent space (Generator input)')
     parser.add_argument('--temp', type=float, default=0.2, help='temperature to use for gumbel-softmax quantization')
     # -- Search HYPER PARAMS -- #
-    parser.add_argument('-r_search', action='store_true', help='random search for hyperparameters')
+    parser.add_argument('--r_search', action='store_true', help='random search for hyperparameters')
 
     opt = parser.parse_args()
 

@@ -14,7 +14,7 @@ def draw(files: List[str], logger: Logger):
         logger.save_image_grid(None, fake_imgs, batch)
 
 
-def check_ind(files) -> [{str:float}]:
+def check_ind(files) -> [float]:
     run_stats = []
     for file in files:
         correct = 0
@@ -23,13 +23,12 @@ def check_ind(files) -> [{str:float}]:
             correct += int(mu.check_maze(maze))
 
         file = file.split("/")
-        file = "total_batch_" + str(int(file[len(file)-1].split(".")[0].split("_")[1]))
+        file = "total_batch_" + str(int(file[len(file) - 1].split(".")[0].split("_")[1]))
 
         print(file, correct, '/', sample.shape[0])
-        tmp = {}
-        tmp[file] = correct / sample.shape[0]
-        run_stats.append(tmp)
+        run_stats.append(correct)
     return run_stats
+
 
 def check_avg(files):
     for idx, chunk in enumerate(misc.chunks(files, 100)):
