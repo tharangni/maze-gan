@@ -1,5 +1,6 @@
 import argparse
 import importlib
+from helpers.random_search import begin_search
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -27,9 +28,15 @@ if __name__ == '__main__':
     parser.add_argument('--latent_dim', type=int, default=128,
                         help='The dimension of the latent space (Generator input)')
     parser.add_argument('--temp', type=float, default=0.2, help='temperature to use for gumbel-softmax quantization')
+    # -- Search HYPER PARAMS -- #
+    parser.add_argument('-r_search', action='store_true', help='random search for hyperparameters')
+
     opt = parser.parse_args()
 
     print(opt)
 
-    model = importlib.import_module('.'.join(['models', opt.model, opt.model]))
-    model.run(opt)
+    if opt.r_search:
+        begin_search(opt)
+    else:
+        model = importlib.import_module('.'.join(['models', opt.model, opt.model]))
+        model.run(opt)

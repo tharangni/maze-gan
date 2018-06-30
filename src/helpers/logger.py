@@ -19,6 +19,7 @@ class Logger:
             run: An id of the current run. Should match the Tensorboard run id. Usually a datetime.
         """
 
+        self.run  = run
         self.sample_path = os.path.join(module_path, 'samples', run)
         self.image_path = os.path.join(module_path, 'images', run)
         os.makedirs(self.sample_path, exist_ok=True)
@@ -30,6 +31,11 @@ class Logger:
         self.csv_file = open(os.path.join(path, "epoch.csv"), 'w+', newline='')
         self.csv_writer = csv.writer(self.csv_file, delimiter=',')  # for looging results for graphing.
         self.csv_writer.writerow(['epoch_no', 'batch_no', 'd_loss', 'g_loss', 'D(x)', 'D(G(X))'])
+        self.lastest_GAN_stats = {"g_loss": 1000000,
+                                 "d_g_z": -1,
+                                 "d_loss": 1000000,
+                                 "d_x": 2,
+                                 "epoch": 0}
 
     def log_batch_statistics(self, epoch: int, epochs: int, batch: int, batches: int,
                              d_loss: Variable, g_loss: Variable,
@@ -51,6 +57,12 @@ class Logger:
                real_scores.detach().mean().item(), fake_scores.detach().mean().item()))
         self.csv_writer.writerow([epoch + 1, batch + 1, d_loss.item(), g_loss.item(), real_scores.mean().item(),
                                   fake_scores.mean().item()])
+        # Lastest stats on GAN
+        self.lastest_GAN_stats["g_loss"] = g_loss.item()
+        self.lastest_GAN_stats["d_g_z"] = real_scores.mean().item()
+        self.lastest_GAN_stats["d_loss"] = d_loss.item()
+        self.lastest_GAN_stats["d_x"] = fake_scores.mean().item()
+        self.lastest_GAN_stats["epoch"] = epoch + 1
 
     def save_image_grid(self, real_imgs, fake_imgs, step) -> None:
         """Save a  5 x 5 grid of images, real and generated. Does not do any upscaling on the images,

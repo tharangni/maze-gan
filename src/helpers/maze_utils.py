@@ -127,10 +127,9 @@ def gen_maze_data(n: int, mx: int, my: int) -> torch.Tensor:
         mazes[i] = torch.from_numpy(gen_maze(mx, my))
         if (i + 1) % 100 == 0:
             print("Generated {}/{} mazes...".format(i + 1, n))
-    print('Persisting data to file {}.{}x{}.mazes.tar'.format(n, mx, my))
-    path = os.path.join(ROOT, 'data', 'mazes', '{}.{}x{}.mazes.tar'.format(opts.number, opts.size, opts.size))
-    torch.save(data, path)
-
+    print('Persisting data to file {}.{}x{}.data '.format(n, mx, my))
+    path = os.path.join(ROOT, 'data', 'mazes', '{}.{}x{}.data'.format(opts.number, opts.size, opts.size))
+    torch.save(mazes, path)
     return mazes
 
 
@@ -220,7 +219,7 @@ if __name__ == '__main__':
     if opts.action == 'generate':
         data = gen_maze_data(opts.number, opts.size, opts.size)
     elif opts.action == 'draw':
-        data = torch.load('../../data/mazes/{}.{}x{}.mazes'.format(opts.number, opts.size, opts.size))
+        data = torch.load('../../data/mazes/{}.{}x{}.data'.format(opts.number, opts.size, opts.size))
         os.makedirs(opts.path, exist_ok=True)
         save_grid(mazes=data, path='/'.join([opts.path, 'first_sample']))
     else:
