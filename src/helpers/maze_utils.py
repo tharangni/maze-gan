@@ -121,15 +121,24 @@ def gen_maze_data(n: int, mx: int, my: int) -> torch.Tensor:
     Returns:
         The tensor of generated mazes
     """
-    print('Generating {} {}x{} mazes'.format(n, mx, my))
-    mazes = torch.empty([n, mx, my])
+    mazes = np.zeros([n, mx, my])
     for i in range(n):
-        mazes[i] = torch.from_numpy(gen_maze(mx, my))
+        mazes[i] = gen_maze(mx, my)
         if (i + 1) % 100 == 0:
             print("Generated {}/{} mazes...".format(i + 1, n))
-    print('Persisting data to file {}.{}x{}.data '.format(n, mx, my))
-    path = os.path.join(ROOT, 'data', 'mazes', '{}.{}x{}.data'.format(opts.number, opts.size, opts.size))
-    torch.save(mazes, path)
+    unique_maze = np.unique(mazes, axis = 0)
+    number_unique = len(unique_maze)
+    # print("{}/{} are unique".format(number_unique, n))
+
+    while number_unique != n:
+        temp_maze = gen_maze_data(n - number_unique, mx, my)
+        temp_unique = np.unique(temp_maze, axis = 0)
+        unique_maze = np.concatenate((unique_maze, temp_unique), axis=0)
+        unique_maze = np.unique(unique_maze, axis = 0)
+        number_unique = len(unique_maze)
+
+    mazes = torch.from_numpy(unique_maze)
+
     return mazes
 
 
@@ -217,7 +226,12 @@ if __name__ == '__main__':
     opts = parser.parse_args()
 
     if opts.action == 'generate':
+        print('Generating {} {}x{} mazes'.format(opts.number, opts.size, opts.size))
         data = gen_maze_data(opts.number, opts.size, opts.size)
+        print("Training data contains only unique mazes now")
+        print('Persisting data to file {}.{}x{}.data '.format(opts.number, opts.size, opts.size))
+        path = os.path.join(ROOT, 'data', 'mazes', '{}.{}x{}.data'.format(opts.number, opts.size, opts.size))
+        torch.save(data, path)
     elif opts.action == 'draw':
         data = torch.load('../../data/mazes/{}.{}x{}.data'.format(opts.number, opts.size, opts.size))
         os.makedirs(opts.path, exist_ok=True)
