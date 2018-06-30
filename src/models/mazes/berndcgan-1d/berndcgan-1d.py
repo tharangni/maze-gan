@@ -1,7 +1,6 @@
-from torchvision.transforms import transforms
 
+from helpers.initialization import weights_init_xavier
 from helpers.checkpoint import Checkpoint
-from helpers import st_gumbel_softmax
 from torch.autograd import Variable
 from helpers.logger import Logger
 from helpers import data_loader
@@ -11,7 +10,6 @@ import torch
 import os
 from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
 import math
-from helpers.maze_utils import gen_maze_data
 
 
 ROOT = os.path.abspath(os.path.join(os.getcwd(), '..'))
@@ -119,8 +117,8 @@ def run(opt):
         adversarial_loss.cuda()
 
     # Initialize weights
-    generator.apply(weights_init_normal)
-    discriminator.apply(weights_init_normal)
+    generator.apply(weights_init_xavier)
+    discriminator.apply(weights_init_xavier)
 
     # Create checkpoint handler and load state if required
     current_epoch = 0
@@ -129,26 +127,26 @@ def run(opt):
     if opt.resume:
         RUN, current_epoch = checkpoint_g.load()
         _, _ = checkpoint_d.load()
-        LOGGER = Logger(CWD, RUN)
+        LOGGER = Logger(CWD, RUN, opt)
         print('Loaded models from disk. Starting at epoch {}.'.format(current_epoch + 1))
     else:
         LOGGER = Logger(CWD, RUN, opt)
 
     # Configure data loader
-    maze_data = gen_maze_data(opt.n_examples, opt.maze_size, opt.maze_size)
-
-    # Data loader
-    maze_loader = torch.utils.data.DataLoader(dataset=maze_data,
-                                              batch_size=opt.batch_size,
-                                              shuffle=True)
+    maze_loader = data_loader.mazes(opt)
 
     for epoch in range(current_epoch, opt.n_epochs):
         for i, mazes in enumerate(maze_loader):
             mazes= mazes.reshape(opt.batch_size, -1).type(TENSOR).float()
 
             # Adversarial ground truths
-            valid = Variable(torch.ones(mazes.shape[0], 1).type(TENSOR), requires_grad=False)
-            fake = Variable(torch.zeros(mazes.shape[0], 1).type(TENSOR), requires_grad=False)
+#            valid = Variable(torch.ones(mazes.shape[0], 1).type(TENSOR), requires_grad=False)
+#            fake = Variable(torch.zeros(mazes.shape[0], 1).type(TENSOR), requires_grad=False)
+            # Adversarial ground truths with noise
+            valid = 0.8 + torch.rand(mazes.shape[0], 1).type(TENSOR) * 0.3
+            valid = Variable(valid, requires_grad=False)
+            fake = torch.rand(mazes.shape[0], 1).type(TENSOR) * 0.3
+            fake = Variable(fake, requires_grad=False)
 
             # Configure input
             real_mazes = Variable(mazes)
