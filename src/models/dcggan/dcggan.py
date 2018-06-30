@@ -35,16 +35,15 @@ def run(args: Namespace):
         def __init__(self):
             super(Generator, self).__init__()
 
-            self.init_size = args.img_size // 4
+            self.init_size = args.img_size // 3
             self.filters = 32
             self.map1 = nn.Linear(args.latent_dim, self.filters * self.init_size ** 2)
             self.conv_blocks = nn.Sequential(
                 nn.BatchNorm2d(self.filters),
-                nn.Upsample(scale_factor=2),
                 nn.Conv2d(self.filters, self.filters, 3, stride=1, padding=1),
                 nn.BatchNorm2d(self.filters, 0.8),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Upsample(scale_factor=2),
+                nn.Upsample(scale_factor=3),
                 nn.Conv2d(self.filters, self.filters // 2, 3, stride=1, padding=1),
                 nn.BatchNorm2d(self.filters // 2, 0.8),
                 nn.LeakyReLU(0.2, inplace=True),
@@ -86,8 +85,8 @@ def run(args: Namespace):
                 *discriminator_block(self.filters * 4, self.filters * 8, 2),
             )
 
-            # The height and width of downsampled image
-            ds_size = args.img_size // 2 ** 2
+            # The height and width of down sampled image
+            ds_size = args.img_size // 3
             self.adv_layer = nn.Sequential(
                 nn.Linear(self.filters * 8 * ds_size ** 2, 1),
                 nn.Sigmoid()
@@ -195,8 +194,10 @@ def run(args: Namespace):
                 LOGGER.log_tensorboard_basic_data(g_loss, d_loss, real_scores, fake_scores, batches_done)
 
                 if args.log_details:
-                    LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
-                    LOGGER.log_tensorboard_parameter_data(discriminator, generator, batches_done)
+                    if batches_done == args.sample_interval:
+                        LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
+                    else:
+                        LOGGER.save_image_grid(None, fake_images, batches_done)
         # -- Save model checkpoints after each epoch -- #
         checkpoint_g.save(RUN, epoch)
         checkpoint_d.save(RUN, epoch)

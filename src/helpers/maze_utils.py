@@ -128,8 +128,8 @@ def gen_maze_data(n: int, mx: int, my: int) -> torch.Tensor:
         if (i + 1) % 100 == 0:
             print("Generated {}/{} mazes...".format(i + 1, n))
     print('Persisting data to file {}.{}x{}.mazes.tar'.format(n, mx, my))
-    path = os.path.join(ROOT, 'data', 'mazes', '{}.{}x{}.mazes.tar'.format(opts.number, opts.size, opts.size))
-    torch.save(data, path)
+    path = os.path.join(ROOT, 'data', 'mazes', '{}.{}x{}.data.tar'.format(n, mx, my))
+    torch.save(mazes, path)
 
     return mazes
 

@@ -74,6 +74,6 @@ def _mazes(args: Namespace) -> torch.Tensor:
         The MAZE dataset as a Tensor fully loaded into memory, shaped according to batch size and maze size.
     """
     data_path = os.path.join(ROOT, 'data', 'mazes',
-                             '{}.{}x{}.data'.format(args.n_examples, args.maze_size, args.maze_size))
+                             '{}.{}x{}.data.tar'.format(args.n_examples, args.maze_size, args.maze_size))
 
     return torch.load(data_path).type(TENSOR).reshape(-1, args.batch_size, 1, args.maze_size, args.maze_size)

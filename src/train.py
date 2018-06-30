@@ -10,7 +10,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--resume', type=bool, help='whether to resume training')
 
     # -- LOGGING OPTIONS -- #
-    parser.add_argument('-l', '--log_details', type=bool, default=True,
+    parser.add_argument('-l', '--log_details', type=bool, default=False,
                         help='whether to log parameter, gradient data and epochs')
 
     # -- HYPER PARAMS -- #
@@ -27,9 +27,9 @@ if __name__ == '__main__':
     parser.add_argument('--latent_dim', type=int, default=128,
                         help='The dimension of the latent space (Generator input)')
     parser.add_argument('--temp', type=float, default=0.2, help='temperature to use for gumbel-softmax quantization')
-    opt = parser.parse_args()
+    args = parser.parse_args()
 
-    print(opt)
+    print(args)
 
-    model = importlib.import_module('.'.join(['models', opt.model, opt.model]))
-    model.run(opt)
+    model = importlib.import_module('.'.join(['models', args.model, args.model]))
+    model.run(args)

@@ -170,8 +170,10 @@ def run(args: Namespace):
                 LOGGER.log_tensorboard_basic_data(g_loss, d_loss, real_scores, fake_scores, batches_done)
 
                 if args.log_details:
-                    LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
-                    LOGGER.log_tensorboard_parameter_data(discriminator, generator, batches_done)
+                    if batches_done == args.sample_interval:
+                        LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
+                    else:
+                        LOGGER.save_image_grid(None, fake_images, batches_done)
         # -- Save model checkpoints after each epoch -- #
         checkpoint_g.save(RUN, epoch)
         checkpoint_d.save(RUN, epoch)

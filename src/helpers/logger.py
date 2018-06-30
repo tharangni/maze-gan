@@ -53,7 +53,7 @@ class Logger:
                                   fake_scores.mean().item()])
 
     def save_image_grid(self, real_imgs, fake_imgs, step) -> None:
-        """Save a  5 x 5 grid of images, real and generated. Does not do any upscaling on the images,
+        """Save a  5 x 5 grid of images, real and generated. Does not do any up scaling on the images,
         so small mazes of e.g. 8 x 8 will not show well. Accepts batches of images using
         PyTorch batch representation batch_size x 1 x *image_dimensions
 

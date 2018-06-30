@@ -9,7 +9,6 @@ import numpy as np
 import torch
 import os
 
-
 ROOT = os.path.abspath(os.path.join(os.getcwd(), '..'))
 CWD = os.path.dirname(os.path.abspath(__file__))
 RUN = datetime.today().strftime('%Y-%m-%d/%H-%M-%S')
@@ -171,8 +170,11 @@ def run(args):
                 LOGGER.log_tensorboard_basic_data(g_loss, d_loss, real_scores, fake_scores, batches_done)
 
                 if args.log_details:
-                    LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
-                    LOGGER.log_tensorboard_parameter_data(discriminator, generator, batches_done)
+                    if args.log_details:
+                        if batches_done == args.sample_interval:
+                            LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
+                        else:
+                            LOGGER.save_image_grid(None, fake_images, batches_done)
         # -- Save model checkpoints after each epoch -- #
         checkpoint_g.save(RUN, epoch)
         checkpoint_d.save(RUN, epoch)

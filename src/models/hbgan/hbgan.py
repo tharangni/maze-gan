@@ -1,9 +1,6 @@
-from argparse import Namespace
-
+from helpers.initialization import weights_init_xavier
 from helpers.checkpoint import Checkpoint
 from torch.autograd import Variable
-
-from helpers.initialization import weights_init_xavier
 from helpers.logger import Logger
 from helpers import st_heaviside
 from helpers import data_loader
@@ -23,13 +20,17 @@ TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
 LOGGER = None
 
 
-def run(args: Namespace):
+def boundary_seeking_loss(y_pred):
+    """Boundary seeking loss. Reference: https://wiseodd.github.io/techblog/2017/03/07/boundary-seeking-gan/"""
+    return 0.5 * torch.mean((torch.log(y_pred) - torch.log(1 - y_pred)) ** 2)
+
+
+def run(args):
     global LOGGER
     global RUN
 
-    img_shape = (1, args.img_size, args.img_size)
+    img_shape = (1, args.img_size, args.img_size)  # one channel only
 
-    # noinspection PyMethodMayBeStatic
     class Generator(nn.Module):
         def __init__(self):
             super(Generator, self).__init__()
@@ -52,8 +53,8 @@ def run(args: Namespace):
 
         def forward(self, z_batch):
             img = st_heaviside.straight_through(self.model(z_batch))
-
-            return img.view(img.size(0), *img_shape)
+            img = img.view(img.size(0), *img_shape)
+            return img
 
     class Discriminator(nn.Module):
         def __init__(self):
@@ -73,7 +74,9 @@ def run(args: Namespace):
             validity = self.model(img_flat)
             return validity
 
-    adversarial_loss = torch.nn.BCELoss()
+    # Define losses
+    discriminator_loss = torch.nn.BCELoss()
+    generator_loss = boundary_seeking_loss
 
     # Initialize generator and discriminator
     generator = Generator()
@@ -87,7 +90,7 @@ def run(args: Namespace):
     if CUDA:
         generator.cuda()
         discriminator.cuda()
-        adversarial_loss.cuda()
+        discriminator_loss.cuda()
 
     # Initialize weights
     generator.apply(weights_init_xavier)
@@ -122,7 +125,7 @@ def run(args: Namespace):
             fake = Variable(fake, requires_grad=False)
 
             # Configure input
-            real_imgs = Variable(imgs)
+            real_imgs = Variable(imgs.type(TENSOR))
 
             # -----------------
             #  Train Generator
@@ -131,13 +134,13 @@ def run(args: Namespace):
             optimizer_g.zero_grad()
 
             # Sample noise as generator input
-            z = Variable(torch.randn(imgs.shape[0], args.latent_dim).type(TENSOR))
+            z = Variable(TENSOR(np.random.normal(0, 1, (imgs.shape[0], args.latent_dim))))
 
             # Generate a batch of images
             fake_images = generator(z)
 
             # Loss measures generator's ability to fool the discriminator
-            g_loss = adversarial_loss(discriminator(fake_images), valid)
+            g_loss = generator_loss(discriminator(fake_images))
 
             g_loss.backward()
             optimizer_g.step()
@@ -150,9 +153,9 @@ def run(args: Namespace):
 
             # Measure discriminator's ability to classify real from generated samples
             real_scores = discriminator(real_imgs)
-            real_loss = adversarial_loss(real_scores, valid)
+            real_loss = discriminator_loss(real_scores, valid)
             fake_scores = discriminator(fake_images.detach())
-            fake_loss = adversarial_loss(fake_scores, fake)
+            fake_loss = discriminator_loss(fake_scores, fake)
             d_loss = (real_loss + fake_loss) / 2
 
             d_loss.backward()
