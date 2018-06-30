@@ -53,8 +53,9 @@ def begin_search(opt: {}):
         model = importlib.import_module('.'.join(['models', opt.model, opt.model]))
         model.run(opt)
 
-        correct_amount = ev.check_ind(sample_files, run)
-        save_results(model.LOGGER, opt, correct_amount)
+        #get sample session
+        #correct_amount = ev.check_ind(sample_files, run)
+        #log correct amount save_results(model.LOGGER, opt, correct_amount)
 
 def save_results(model, opt, correct_amount):
     global csv_writer

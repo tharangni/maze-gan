@@ -32,7 +32,7 @@ if __name__ == '__main__':
     else:
         if len(sample_files) > 0:
             if opt.action == 'check_ind':
-                ev.check_ind(sample_files)
+               _ = ev.check_ind(sample_files)
             if opt.action == 'check_avg':
                 ev.check_avg(sample_files)
             if opt.action == 'check_and_draw':

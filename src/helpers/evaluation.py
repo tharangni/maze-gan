@@ -14,14 +14,22 @@ def draw(files: List[str], logger: Logger):
         logger.save_image_grid(None, fake_imgs, batch)
 
 
-def check_ind(files):
+def check_ind(files) -> [{str:float}]:
+    run_stats = []
     for file in files:
         correct = 0
         sample = torch.load(file).numpy()
         for maze in sample:
             correct += int(mu.check_maze(maze))
-        print(file, correct, '/', sample.shape[0])
 
+        file = file.split("/")
+        file = "total_batch_" + str(int(file[len(file)-1].split(".")[0].split("_")[1]))
+
+        print(file, correct, '/', sample.shape[0])
+        tmp = {}
+        tmp[file] = correct / sample.shape[0]
+        run_stats.append(tmp)
+    return run_stats
 
 def check_avg(files):
     for idx, chunk in enumerate(misc.chunks(files, 100)):
