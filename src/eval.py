@@ -20,8 +20,8 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     print(opt)
 
-    module_path = os.path.abspath(os.path.join('models', opt.dataset, opt.model))
-    samples_path = os.path.abspath(os.path.join('models', opt.dataset, opt.model, 'samples', opt.run, '*.sample.tar'))
+    module_path = os.path.abspath(os.path.join('models', opt.model))
+    samples_path = os.path.abspath(os.path.join('models', opt.model, 'samples', opt.run, '*.sample.tar'))
     sample_files = glob.glob(samples_path)
     sample_files.sort()
 
