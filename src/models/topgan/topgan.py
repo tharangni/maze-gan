@@ -183,7 +183,6 @@ def run(args: Namespace):
 
             batches_done = epoch * len(mnist_loader) + i + 1
             if batches_done % args.sample_interval == 0:
-                print(fake_images.size())
                 fake_images_probs = torch.cat(
                     [
                         1 - fake_images.view(args.batch_size, args.img_size ** 2, -1),
