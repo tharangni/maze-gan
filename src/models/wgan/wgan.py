@@ -175,7 +175,6 @@ def run(args: argparse.Namespace):
                             LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
                         else:
                             LOGGER.save_image_grid(None, fake_images, batches_done)
-            batches_done += 1
         # -- Save model checkpoints after each epoch -- #
         checkpoint_g.save(RUN, epoch)
         checkpoint_d.save(RUN, epoch)

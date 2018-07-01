@@ -58,16 +58,13 @@ def run(opt):
             )
     
         def forward(self, z):    
-            out = self.l1(z)
-            out = out.view(out.shape[0], 128, self.init_size)
-            fake_mazes = self.model(out)
-    
-            test_tensor = torch.tensor([opt.temp]).type(TENSOR)
+            map1 = self.l1(z)
+            map1 = map1.view(map1.shape[0], 128, self.init_size)
+            out = self.model(map1)
 
-            m = RelaxedBernoulli(test_tensor, probs=fake_mazes)
-            fake_mazes = m.rsample()
+            img = RelaxedBernoulli(torch.tensor([opt.temp]).type(TENSOR), probs=out).rsample()
             
-            return fake_mazes
+            return img
 
     class Discriminator(nn.Module):
         def __init__(self):
@@ -94,6 +91,7 @@ def run(opt):
                                         nn.Sigmoid())
 
         def forward(self, maze):
+            print(maze.size())
             out = self.model(maze)
             out = out.view(out.shape[0], -1)
             validity = self.adv_layer(out)
