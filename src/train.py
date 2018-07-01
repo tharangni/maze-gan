@@ -26,7 +26,11 @@ if __name__ == '__main__':
                         help='size of each maze dimension (Discriminator input)')
     parser.add_argument('--latent_dim', type=int, default=128,
                         help='The dimension of the latent space (Generator input)')
+
     parser.add_argument('--temp', type=float, default=0.2, help='temperature to use for gumbel-softmax quantization')
+
+    parser.add_argument('--n_critic', type=int, default=5, help='number of training steps for discriminator per iter')
+    parser.add_argument('--clip_value', type=float, default=0.01, help='lower and upper clip value for disc. weights')
     args = parser.parse_args()
 
     print(args)
