@@ -114,15 +114,14 @@ def run(args: argparse.Namespace):
     opts = {
         'binary': True,
     }
-    mnist_loader = data_loader.load(args, opts)
+    batched_data = data_loader.load(args, opts)
 
     # ----------
     #  Training
     # ----------
 
-    batches_done = 0
     for epoch in range(current_epoch, args.n_epochs):
-        for i, imgs in enumerate(mnist_loader):
+        for i, imgs in enumerate(batched_data):
             # Configure input
             real_imgs = Variable(imgs.type(TENSOR))
 
@@ -147,8 +146,9 @@ def run(args: argparse.Namespace):
             for p in discriminator.parameters():
                 p.data.clamp_(-args.clip_value, args.clip_value)
 
+            batches_done = epoch * len(batched_data) + i + 1
             # Train the generator every n_critic iterations
-            if i % args.n_critic == 0:
+            if batches_done % args.n_critic == 0:
                 # -----------------
                 #  Train Generator
                 # -----------------
@@ -166,7 +166,7 @@ def run(args: argparse.Namespace):
                 if batches_done % args.sample_interval == 0:
                     LOGGER.log_generated_sample(fake_images, batches_done)
 
-                    LOGGER.log_batch_statistics(epoch, args.n_epochs, i, len(mnist_loader), loss_d, loss_g)
+                    LOGGER.log_batch_statistics(epoch, args.n_epochs, i + 1, len(batched_data), loss_d, loss_g)
 
                     LOGGER.log_tensorboard_basic_data(loss_g, loss_d, step=batches_done)
 
