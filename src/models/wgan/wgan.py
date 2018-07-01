@@ -4,19 +4,15 @@ from datetime import datetime
 
 import numpy as np
 
-import torchvision.transforms as transforms
-from helpers import st_heaviside
-from torchvision.utils import save_image
-
-from torch.utils.data import DataLoader
-from torchvision import datasets
 from torch.autograd import Variable
 
 import torch.nn as nn
 import torch
 
 from helpers.checkpoint import Checkpoint
+from helpers.initialization import weights_init_xavier
 from helpers.logger import Logger
+from helpers import st_gumbel_softmax, data_loader
 
 ROOT = os.path.abspath(os.path.join(os.getcwd(), '..'))
 CWD = os.path.dirname(os.path.abspath(__file__))
@@ -28,6 +24,7 @@ TENSOR = torch.cuda.FloatTensor if CUDA else torch.FloatTensor
 LOGGER = None
 
 os.makedirs('images', exist_ok=True)
+
 
 def run(args: argparse.Namespace):
     global LOGGER
@@ -53,15 +50,19 @@ def run(args: argparse.Namespace):
                 *block(256, 512),
                 *block(512, 1024),
                 nn.Linear(1024, int(np.prod(img_shape))),
-                nn.Tanh()
             )
 
-        def forward(self, z_batch):
-            img = self.model(z_batch)
-            img = img.view(img.shape[0], *img_shape)
+            self.out = nn.LogSigmoid()
 
-            # return st_heaviside.straight_through(img)
-            return img
+        def forward(self, z_batch):
+            linear = self.model(z_batch)
+
+            white_prob = self.out(linear).view(args.batch_size, args.img_size ** 2, 1)
+            black_prob = self.out(-linear).view(args.batch_size, args.img_size ** 2, 1)
+            probs = torch.cat([black_prob, white_prob], dim=-1)
+            img = st_gumbel_softmax.straight_through(probs, args.temp, True)
+
+            return img.view(img.shape[0], *img_shape)
 
     class Discriminator(nn.Module):
         def __init__(self):
@@ -85,23 +86,17 @@ def run(args: argparse.Namespace):
     generator = Generator()
     discriminator = Discriminator()
 
+    # Optimizers
+    optimizer_g = torch.optim.RMSprop(generator.parameters(), lr=args.g_lr)
+    optimizer_d = torch.optim.RMSprop(discriminator.parameters(), lr=args.d_lr)
+
     if CUDA:
         generator.cuda()
         discriminator.cuda()
 
-    # Configure data loader
-    os.makedirs('../../data/mnist', exist_ok=True)
-    dataloader = torch.utils.data.DataLoader(
-        datasets.MNIST('../../data/mnist', train=True, download=True,
-                       transform=transforms.Compose([
-                           transforms.ToTensor(),
-                           transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                       ])),
-        batch_size=args.batch_size, shuffle=True)
-
-    # Optimizers
-    optimizer_g = torch.optim.RMSprop(generator.parameters(), lr=args.g_lr)
-    optimizer_d = torch.optim.RMSprop(discriminator.parameters(), lr=args.d_lr)
+    # Initialize weights
+    generator.apply(weights_init_xavier)
+    discriminator.apply(weights_init_xavier)
 
     # Create checkpoint handler and load state if required
     current_epoch = 0
@@ -115,14 +110,19 @@ def run(args: argparse.Namespace):
     else:
         LOGGER = Logger(CWD, RUN, args)
 
+    # Configure data loader
+    opts = {
+        'binary': True,
+    }
+    mnist_loader = data_loader.load(args, opts)
+
     # ----------
     #  Training
     # ----------
 
     batches_done = 0
     for epoch in range(current_epoch, args.n_epochs):
-        for i, (imgs, _) in enumerate(dataloader):
-
+        for i, imgs in enumerate(mnist_loader):
             # Configure input
             real_imgs = Variable(imgs.type(TENSOR))
 
@@ -133,12 +133,12 @@ def run(args: argparse.Namespace):
             optimizer_d.zero_grad()
 
             # Sample noise as generator input
-            z = Variable(TENSOR(np.random.normal(0, 1, (imgs.shape[0], args.latent_dim))))
+            z = Variable(torch.randn(imgs.shape[0], args.latent_dim).type(TENSOR))
 
             # Generate a batch of images
-            fake_imgs = generator(z).detach()
+            fake_images = generator(z).detach()
             # Adversarial loss
-            loss_d = -torch.mean(discriminator(real_imgs)) + torch.mean(discriminator(fake_imgs))
+            loss_d = -torch.mean(discriminator(real_imgs)) + torch.mean(discriminator(fake_images))
 
             loss_d.backward()
             optimizer_d.step()
@@ -156,18 +156,26 @@ def run(args: argparse.Namespace):
                 optimizer_g.zero_grad()
 
                 # Generate a batch of images
-                gen_imgs = generator(z)
+                fake_images = generator(z)
                 # Adversarial loss
-                loss_g = -torch.mean(discriminator(gen_imgs))
+                loss_g = -torch.mean(discriminator(fake_images))
 
                 loss_g.backward()
                 optimizer_g.step()
 
-                print("[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]" % (epoch, args.n_epochs,
-                                                                                 batches_done % len(dataloader),
-                                                                                 len(dataloader),
-                                                                                 loss_d.item(), loss_g.item()))
+                if batches_done % args.sample_interval == 0:
+                    LOGGER.log_generated_sample(fake_images, batches_done)
 
-            if batches_done % args.sample_interval == 0:
-                save_image(gen_imgs.data[:25], 'images/{0:0=6d}.png'.format(batches_done), nrow=5, normalize=True)
+                    LOGGER.log_batch_statistics(epoch, args.n_epochs, i, len(mnist_loader), loss_d, loss_g)
+
+                    LOGGER.log_tensorboard_basic_data(loss_g, loss_d, step=batches_done)
+
+                    if args.log_details:
+                        if batches_done == args.sample_interval:
+                            LOGGER.save_image_grid(real_imgs, fake_images, batches_done)
+                        else:
+                            LOGGER.save_image_grid(None, fake_images, batches_done)
             batches_done += 1
+        # -- Save model checkpoints after each epoch -- #
+        checkpoint_g.save(RUN, epoch)
+        checkpoint_d.save(RUN, epoch)

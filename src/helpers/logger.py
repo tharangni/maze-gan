@@ -20,7 +20,7 @@ class Logger:
             run: An id of the current run. Should match the Tensorboard run id. Usually a datetime.
         """
 
-        self.run  = run
+        self.run = run
         self.sample_path = os.path.join(module_path, 'samples', run)
         self.image_path = os.path.join(module_path, 'images', run)
         os.makedirs(self.sample_path, exist_ok=True)
@@ -33,16 +33,16 @@ class Logger:
         self.csv_writer = csv.writer(self.csv_file, delimiter=',')  # for looging results for graphing.
         self.csv_writer.writerow(['epoch_no', 'batch_no', 'd_loss', 'g_loss', 'D(x)', 'D(G(X))'])
         self.lastest_GAN_stats = {"g_loss": 1000000,
-                                 "d_g_z": -1,
-                                 "d_loss": 1000000,
-                                 "d_x": 2,
-                                 "epoch": 0}
+                                  "d_g_z": -1,
+                                  "d_loss": 1000000,
+                                  "d_x": 2,
+                                  "epoch": 0}
 
         self.args = args
 
     def log_batch_statistics(self, epoch: int, epochs: int, batch: int, batches: int,
                              d_loss: Variable, g_loss: Variable,
-                             real_scores: Variable, fake_scores: Variable) -> None:
+                             real_scores: Variable = None, fake_scores: Variable = None) -> None:
         """ Print statistics of current batch to console.
 
         Args:
@@ -55,17 +55,25 @@ class Logger:
             real_scores: Discriminator scores on real images. A Tensor of size batch_size x 1.
             fake_scores: Discriminator scores on fake images. A Tensor of size batch_size x 1.
         """
-        print("[Epoch %d/%d] [Batch %d/%d] [D loss: %.4f] [G loss: %.4f] [D(x): %.2f] [D(G(z)): %.2f]" %
-              (epoch + 1, epochs, batch, batches, d_loss.item(), g_loss.item(),
-               real_scores.detach().mean().item(), fake_scores.detach().mean().item()))
-        self.csv_writer.writerow([epoch + 1, batch + 1, d_loss.item(), g_loss.item(), real_scores.mean().item(),
-                                  fake_scores.mean().item()])
-        # Lastest stats on GAN
-        self.lastest_GAN_stats["g_loss"] = g_loss.item()
-        self.lastest_GAN_stats["d_g_z"] = real_scores.mean().item()
-        self.lastest_GAN_stats["d_loss"] = d_loss.item()
-        self.lastest_GAN_stats["d_x"] = fake_scores.mean().item()
-        self.lastest_GAN_stats["epoch"] = epoch + 1
+        if real_scores is not None and fake_scores is not None:
+            print("[Epoch %d/%d] [Batch %d/%d] [D loss: %.4f] [G loss: %.4f] [D(x): %.2f] [D(G(z)): %.2f]" %
+                  (epoch + 1, epochs, batch, batches, d_loss.item(), g_loss.item(),
+                   real_scores.detach().mean().item(), fake_scores.detach().mean().item()))
+            self.csv_writer.writerow([epoch + 1, batch + 1, d_loss.item(), g_loss.item(), real_scores.mean().item(),
+                                      fake_scores.mean().item()])
+            # Lastest stats on GAN
+            self.lastest_GAN_stats["g_loss"] = g_loss.item()
+            self.lastest_GAN_stats["d_g_z"] = real_scores.mean().item()
+            self.lastest_GAN_stats["d_loss"] = d_loss.item()
+            self.lastest_GAN_stats["d_x"] = fake_scores.mean().item()
+            self.lastest_GAN_stats["epoch"] = epoch + 1
+        else:
+            print("[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]" %
+                  (epoch + 1, epochs, batch, batches, d_loss.item(), g_loss.item()))
+            self.csv_writer.writerow([epoch + 1, batch + 1, d_loss.item(), g_loss.item(), -1, -1])
+            self.lastest_GAN_stats["g_loss"] = g_loss.item()
+            self.lastest_GAN_stats["d_loss"] = d_loss.item()
+            self.lastest_GAN_stats["epoch"] = epoch + 1
 
     def save_image_grid(self, real_imgs, fake_imgs, step) -> None:
         """Save a  5 x 5 grid of images, real and generated. Does not do any up scaling on the images,
@@ -82,21 +90,23 @@ class Logger:
         if self.args.dataset == 'mnist':
             if real_imgs is not None:
                 size = real_imgs.size()
-                save_image(real_imgs.view(size[0], 1, size[-1], size[-1]).data[:25], real_path, nrow=5, normalize=True)
+                save_image(real_imgs.view(size[0], 1, size[-1], size[-1]).data[:25], real_path, nrow=5,
+                           normalize=True)
             if fake_imgs is not None:
                 size = fake_imgs.size()
-                save_image(fake_imgs.view(size[0], 1, size[-1], size[-1]).data[:25], fake_path, nrow=5, normalize=True)
+                save_image(fake_imgs.view(size[0], 1, size[-1], size[-1]).data[:25], fake_path, nrow=5,
+                           normalize=True)
         elif self.args.dataset == 'mazes':
             if real_imgs is not None:
                 size = real_imgs.size()
                 maze_utils.save_grid(
-                    real_imgs.view(size[0],  size[-1], size[-1]).data.numpy()[:25], real_path)
+                    real_imgs.view(size[0], size[-1], size[-1]).data.numpy()[:25], real_path)
             if fake_imgs is not None:
                 size = fake_imgs.size()
                 maze_utils.save_grid(fake_imgs.view(size[0], size[-1], size[-1]).data.numpy()[:25], fake_path)
 
-    def log_tensorboard_basic_data(self, g_loss: Variable, d_loss: Variable, real_scores: Variable,
-                                   fake_scores: Variable, step: int) -> None:
+    def log_tensorboard_basic_data(self, g_loss: Variable, d_loss: Variable, real_scores: Variable = None,
+                                   fake_scores: Variable = None, step: int = 0) -> None:
         """ Log basic data to show plots of generator and discriminator losses and the mean scores of the
         discriminator on real and generated images. Should be called with some frequency in any training procedure.
 
@@ -109,8 +119,10 @@ class Logger:
         """
         self.writer.add_scalar('Generator/loss', g_loss.item(), step)
         self.writer.add_scalar('Discriminator/loss', d_loss.item(), step)
-        self.writer.add_scalar('D(x)', real_scores.detach().mean().item(), step)
-        self.writer.add_scalar('D(G(z))', fake_scores.detach().mean().item(), step)
+        if real_scores is not None:
+            self.writer.add_scalar('D(x)', real_scores.detach().mean().item(), step)
+        if fake_scores is not None:
+            self.writer.add_scalar('D(G(z))', fake_scores.detach().mean().item(), step)
 
     def log_tensorboard_parameter_data(self, generator: torch.nn.Module,
                                        discriminator: torch.nn.Module, step: int) -> None:

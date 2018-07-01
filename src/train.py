@@ -38,6 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('--r_search', action='store_true', help='random search for hyper parameters')
 
     args = parser.parse_args()
+    print(args)
 
     if args.r_search:
         begin_search(args)
