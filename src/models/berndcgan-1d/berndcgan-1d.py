@@ -91,7 +91,6 @@ def run(opt):
                                         nn.Sigmoid())
 
         def forward(self, maze):
-            print(maze.size())
             out = self.model(maze)
             out = out.view(out.shape[0], -1)
             validity = self.adv_layer(out)
