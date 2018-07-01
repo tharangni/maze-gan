@@ -1,5 +1,6 @@
 import argparse
 import importlib
+from helpers.random_search import begin_search
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -29,11 +30,17 @@ if __name__ == '__main__':
 
     parser.add_argument('--temp', type=float, default=0.2, help='temperature to use for gumbel-softmax quantization')
 
+    # -- HYPER PARAMS FOR WGAN -- #
     parser.add_argument('--n_critic', type=int, default=5, help='number of training steps for discriminator per iter')
     parser.add_argument('--clip_value', type=float, default=0.01, help='lower and upper clip value for disc. weights')
+
+    # -- SEARCH HYPER PARAMS -- #
+    parser.add_argument('--r_search', action='store_true', help='random search for hyper parameters')
+
     args = parser.parse_args()
 
-    print(args)
-
-    model = importlib.import_module('.'.join(['models', args.model, args.model]))
-    model.run(args)
+    if args.r_search:
+        begin_search(args)
+    else:
+        model = importlib.import_module('.'.join(['models', args.model, args.model]))
+        model.run(args)

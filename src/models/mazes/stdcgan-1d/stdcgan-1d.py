@@ -1,3 +1,4 @@
+from torchvision.transforms import transforms
 
 from helpers.initialization import weights_init_xavier
 from helpers.checkpoint import Checkpoint
@@ -8,8 +9,8 @@ from datetime import datetime
 import torch.nn as nn
 import torch
 import os
-from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
 import math
+from helpers.st_heaviside import straight_through
 
 
 ROOT = os.path.abspath(os.path.join(os.getcwd(), '..'))
@@ -62,11 +63,7 @@ def run(opt):
             out = out.view(out.shape[0], 128, self.init_size)
             fake_mazes = self.model(out)
     
-            test_tensor = torch.tensor([opt.temp]).type(TENSOR)
-
-            m = RelaxedBernoulli(test_tensor, probs=fake_mazes)
-            fake_mazes = m.rsample()
-            
+            fake_mazes - straight_through(fake_mazes)            
             return fake_mazes
 
     class Discriminator(nn.Module):
