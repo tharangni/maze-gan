@@ -130,7 +130,11 @@ def run(opt):
         LOGGER = Logger(CWD, RUN, opt)
 
     # Configure data loader
-    maze_loader = data_loader.mazes(opt)
+    #maze_loader = data_loader.mazes(opt)
+    opts = {
+        'binary': True,
+    }
+    maze_loader = data_loader.load(opt, opts)
 
     for epoch in range(current_epoch, opt.n_epochs):
         for i, mazes in enumerate(maze_loader):
