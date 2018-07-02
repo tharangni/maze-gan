@@ -192,10 +192,10 @@ def run(opt):
                 fake_mazes = fake_mazes.reshape(fake_mazes.size(0), opt.maze_size, opt.maze_size)
                 fake_mazes[fake_mazes < 0.5] = 0
                 fake_mazes[fake_mazes > 0.5] = 1
-                correct = 0
-                for maze in fake_mazes:
-                    correct += int(check_maze(maze.detach()))
-                print(correct)
+                #correct = 0
+                #for maze in fake_mazes:
+                #    correct += int(check_maze(maze.detach()))
+                #print(correct)
                 real_mazes = real_mazes.reshape(real_mazes.size(0), opt.maze_size, opt.maze_size)
                 LOGGER.log_generated_sample(fake_mazes, batches_done)
 
