@@ -100,10 +100,10 @@ class Logger:
             if real_imgs is not None:
                 size = real_imgs.size()
                 maze_utils.save_grid(
-                    real_imgs.view(size[0], size[-1], size[-1]).data.numpy()[:25], real_path)
+                    real_imgs.view(size[0], size[-1], size[-1]).data.cpu().numpy()[:25], real_path)
             if fake_imgs is not None:
                 size = fake_imgs.size()
-                maze_utils.save_grid(fake_imgs.view(size[0], size[-1], size[-1]).data.numpy()[:25], fake_path)
+                maze_utils.save_grid(fake_imgs.view(size[0], size[-1], size[-1]).data.cpu().numpy()[:25], fake_path)
 
     def log_tensorboard_basic_data(self, g_loss: Variable, d_loss: Variable, real_scores: Variable = None,
                                    fake_scores: Variable = None, step: int = 0) -> None:
