@@ -1,6 +1,8 @@
 import argparse
 
 from helpers import maze_utils
+import os
+import torch
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -14,4 +16,12 @@ if __name__ == '__main__':
     print(args)
 
     if args.action == 'create':
-        maze_utils.gen_maze_data(args.n_examples, args.size, args.size)
+        mazes = maze_utils.gen_maze_data(args.n_examples, args.size, args.size)
+        print('Persisting data to file {}.{}x{}.data.tar'.format(args.n_examples, args.size, args.size))
+        ROOT = os.path.abspath(os.path.join(os.getcwd(), '..'))
+
+        directory = os.path.join(ROOT, 'data', 'mazes')
+        path = os.path.join(directory, '{}.{}x{}.data.tar'.format(args.n_examples, args.size, args.size))
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        torch.save(mazes, path)
